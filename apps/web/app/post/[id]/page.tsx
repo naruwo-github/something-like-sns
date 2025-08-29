@@ -61,5 +61,3 @@ export default function PostDetail({ params }: { params: { id: string } }) {
     </main>
   )
 }
-
-

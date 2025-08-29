@@ -63,5 +63,3 @@ export default function Conversation({ params }: { params: { id: string } }) {
     </main>
   )
 }
-
-
