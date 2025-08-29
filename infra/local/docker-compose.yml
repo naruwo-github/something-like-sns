@@ -1,0 +1,31 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sns-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sns
+      MYSQL_USER: app
+      MYSQL_PASSWORD: pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p$$MYSQL_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:4
+    container_name: sns-adminer
+    depends_on:
+      - mysql
+    ports:
+      - "8081:8080"
+
+volumes:
+  mysql-data:
+    driver: local
