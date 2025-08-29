@@ -19,7 +19,6 @@ async function call<TReq extends object, TRes>(path: string, req: TReq, headers:
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Connect-Protocol-Version': '1',
       ...headers,
     },
     body: JSON.stringify(req ?? {}),

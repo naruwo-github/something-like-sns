@@ -32,7 +32,7 @@ func main() {
     e.Use(middleware.Logger())
     e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
         AllowOrigins: []string{"*"},
-        AllowHeaders: []string{"Content-Type", "X-Tenant", "X-User"},
+        AllowHeaders: []string{"Content-Type", "X-Tenant", "X-User", "Connect-Protocol-Version"},
         AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
     }))
 

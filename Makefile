@@ -1,5 +1,6 @@
 -include .env
 export
+API_PORT ?= 8080
 
 proto:
 	cd packages/protos && buf generate
@@ -11,7 +12,10 @@ seed:
 	cd apps/api && go run ./cmd/seed/main.go
 
 api-dev:
-	cd apps/api && go run ./cmd/server
+	cd apps/api && (GO111MODULE=on go run github.com/air-verse/air@v1.52.2 || go run ./cmd/server)
+
+api-kill:
+	lsof -tiTCP:$(API_PORT) | xargs -r kill -9 || true
 
 web-dev:
 	pnpm --filter @repo/web dev
