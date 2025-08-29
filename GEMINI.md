@@ -1,71 +1,34 @@
 ## Project Overview
 
-This repository contains a boilerplate for a multi-tenant SNS (Social Networking Service) application. It is a monorepo managed with pnpm and Turborepo, containing a Go backend, a Next.js frontend, and shared Protobuf definitions.
+This is a boilerplate project for a multi-tenant SNS application, built with a Go backend and a Next.js frontend in a pnpm/Turborepo monorepo. It serves as a minimal, runnable example of a system with row-level database tenancy.
 
-The application supports features like tenants, users, posts, comments, reactions, and direct messages. It uses a shared database with row-level multi-tenancy.
+## Documentation Structure
 
-**Key Technologies:**
+This project has two main documentation files with distinct purposes:
 
-*   **Backend:** Go, connect-go (for RPC), Echo (for web framework), Bun ORM, MySQL
-*   **Frontend:** Next.js, React, TanStack Query, Tailwind CSS
-*   **Monorepo:** pnpm, Turborepo
-*   **API:** Protocol Buffers and connect-go for RPC.
-*   **Database:** MySQL, with migrations handled by golang-migrate.
-*   **Development:** Docker Compose, Makefile
+1.  **`README.md`**: Provides a quick start guide for developers. It contains the essential steps to get the project running locally, an overview of the tech stack, and the basic repository structure. **Start here if you want to run the project.**
+
+2.  **`DESIGN_DOC.md`**: This is the comprehensive design document. It contains all the detailed information about the project's architecture, data models (DDL), API specifications (.proto definitions), multi-tenancy strategy, and development conventions. **Refer to this for any in-depth questions about how the system is designed or why certain decisions were made.**
+
+## Key Technologies
+
+*   **Backend**: Go, connect-go (RPC), Echo, `database/sql` (MySQL), golang-migrate
+*   **Frontend**: Next.js, React, React Hooks (`useState`/`useEffect`)
+*   **Monorepo**: pnpm, Turborepo
+*   **API Definition**: Protocol Buffers (`.proto`)
+*   **Dev Environment**: Docker Compose, Makefile
 
 ## Building and Running
 
-The project uses a `Makefile` to simplify common tasks.
+All common tasks are defined as targets in the `Makefile`. For a step-by-step guide on how to get the development environment running, see the **"ローカル起動手順" (Local Setup)** section in the `README.md`.
 
-**1. Initial Setup:**
+## Key Files and Directories
 
-Install dependencies:
-
-```bash
-pnpm install
-brew install buf buildifier || true
-```
-
-**2. Generate Protobuf Code:**
-
-Generate Go and TypeScript code from the `.proto` files:
-
-```bash
-make proto
-```
-
-**3. Start Database and Run Migrations:**
-
-Start the MySQL database using Docker Compose, then run database migrations and seed the database:
-
-```bash
-docker compose -f infra/local/docker-compose.yml up -d
-make migrate
-make seed
-```
-
-**4. Run Development Servers:**
-
-Run the API and web servers in separate terminals:
-
-```bash
-# Start the Go API server (on port 8080)
-make api-dev
-
-# Start the Next.js web server (on port 3000)
-make web-dev
-```
-
-**5. Accessing the Application:**
-
-*   **Web:** `http://acme.localhost:3000/`
-*   **Adminer:** `http://localhost:8081/`
-
-## Development Conventions
-
-*   **Monorepo:** The project is a monorepo using pnpm workspaces and Turborepo.
-*   **API:** The API is defined using Protocol Buffers in the `packages/protos` directory. Code generation is handled by `buf`.
-*   **Database:** Database schema and migrations are located in `packages/dbschema`.
-*   **Multi-tenancy:** The application uses a shared database with row-level multi-tenancy. The `tenant_id` is used to scope all data access.
-*   **Testing:** The project includes unit, API integration, and E2E tests. The `README.md` mentions Playwright for E2E testing.
-*   **Linting and Formatting:** The project uses ESLint and Prettier for the frontend, and `gofmt`/`golangci-lint` for the backend. You can run linting with `pnpm -w lint`.
+*   `README.md`: Quick start guide.
+*   `DESIGN_DOC.md`: Detailed design and architecture.
+*   `Makefile`: Defines common tasks like `proto`, `migrate`, `seed`, `api-dev`, `web-dev`.
+*   `apps/api/`: The Go backend application.
+*   `apps/web/`: The Next.js frontend application.
+*   `packages/protos/`: The Protobuf files that define the API contracts.
+*   `packages/dbschema/`: Contains the database schema and migration files.
+*   `infra/local/docker-compose.yml`: Defines the local development services (MySQL, Adminer).
