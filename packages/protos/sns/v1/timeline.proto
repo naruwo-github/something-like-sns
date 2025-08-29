@@ -1,0 +1,25 @@
+syntax = "proto3";
+package sns.v1;
+option go_package = "github.com/example/something-like-sns/apps/api/gen/sns/v1;v1";
+
+message Cursor { string token = 1; }
+message Post {
+  uint64 id = 1; uint64 author_user_id = 2; string body = 3; string created_at = 4; bool liked_by_me = 5; uint32 like_count = 6; uint32 comment_count = 7;
+}
+message Comment { uint64 id = 1; uint64 post_id = 2; uint64 author_user_id = 3; string body = 4; string created_at = 5; }
+
+message ListFeedRequest { Cursor cursor = 1; }
+message ListFeedResponse { repeated Post items = 1; Cursor next = 2; }
+message CreatePostRequest { string body = 1; }
+message CreatePostResponse { Post post = 1; }
+message ListCommentsRequest { uint64 post_id = 1; Cursor cursor = 2; }
+message ListCommentsResponse { repeated Comment items = 1; Cursor next = 2; }
+message CreateCommentRequest { uint64 post_id = 1; string body = 2; }
+message CreateCommentResponse { Comment comment = 1; }
+
+service TimelineService {
+  rpc ListFeed(ListFeedRequest) returns (ListFeedResponse);
+  rpc CreatePost(CreatePostRequest) returns (CreatePostResponse);
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse);
+}

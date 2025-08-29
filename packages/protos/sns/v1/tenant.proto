@@ -1,0 +1,18 @@
+syntax = "proto3";
+package sns.v1;
+option go_package = "github.com/example/something-like-sns/apps/api/gen/sns/v1;v1";
+
+message ResolveTenantRequest { string host = 1; }
+message ResolveTenantResponse { uint64 tenant_id = 1; string slug = 2; }
+message GetMeRequest {}
+message GetMeResponse {
+  uint64 user_id = 1;
+  string display_name = 2;
+  repeated TenantMembership memberships = 3;
+}
+message TenantMembership { uint64 tenant_id = 1; string role = 2; string tenant_slug = 3; }
+
+service TenantService {
+  rpc ResolveTenant(ResolveTenantRequest) returns (ResolveTenantResponse);
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+}

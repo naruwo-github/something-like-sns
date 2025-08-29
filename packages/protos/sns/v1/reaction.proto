@@ -1,0 +1,9 @@
+syntax = "proto3";
+package sns.v1;
+option go_package = "github.com/example/something-like-sns/apps/api/gen/sns/v1;v1";
+
+enum TargetType { TARGET_TYPE_UNSPECIFIED = 0; POST = 1; COMMENT = 2; }
+message ToggleReactionRequest { TargetType target_type = 1; uint64 target_id = 2; string type = 3; }
+message ToggleReactionResponse { bool active = 1; uint32 total = 2; }
+
+service ReactionService { rpc ToggleReaction(ToggleReactionRequest) returns (ToggleReactionResponse); }

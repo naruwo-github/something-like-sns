@@ -1,0 +1,18 @@
+version: v1
+plugins:
+  - plugin: buf.build/protocolbuffers/go
+    out: ../../apps/api/gen
+    opt:
+      - paths=source_relative
+  - plugin: buf.build/connectrpc/go
+    out: ../../apps/api/gen
+    opt:
+      - paths=source_relative
+  - plugin: buf.build/bufbuild/es
+    out: ../../packages/shared-ts/src/gen
+    opt:
+      - target=ts
+  - plugin: buf.build/connectrpc/es
+    out: ../../packages/shared-ts/src/gen
+    opt:
+      - target=ts

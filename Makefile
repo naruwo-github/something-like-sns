@@ -2,7 +2,7 @@
 export
 
 proto:
-	buf generate packages/protos
+	cd packages/protos && buf generate
 
 migrate:
 	migrate -path packages/dbschema/migrations -database "mysql://$${DB_USER}:$${DB_PASS}@tcp($${DB_HOST}:$${DB_PORT})/$${DB_NAME}" up
