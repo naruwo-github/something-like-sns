@@ -9,6 +9,9 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+
+	"github.com/example/something-like-sns/apps/api/internal/service"
 )
 
 func mustGetenv(key, def string) string {
@@ -24,6 +27,9 @@ func mustGetenv(key, def string) string {
 
 func main() {
     e := echo.New()
+    e.HideBanner = true
+    e.Use(middleware.Recover())
+    e.Use(middleware.Logger())
 
     // Health
     e.GET("/health", func(c echo.Context) error {
@@ -52,6 +58,12 @@ func main() {
         }
         return c.JSON(http.StatusOK, map[string]string{"status": "up"})
     })
+
+    // Mount RPC handlers
+    allowDev := mustGetenv("ALLOW_DEV_HEADERS", "true") == "true"
+    tenantSvc := service.NewTenantServiceServer(db, allowDev)
+    path, handler := tenantSvc.MountHandler()
+    e.Any(path+"*", echo.WrapHandler(handler))
 
     port := mustGetenv("API_PORT", "8080")
     log.Printf("API listening on :%s", port)
