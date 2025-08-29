@@ -30,6 +30,11 @@ func main() {
     e.HideBanner = true
     e.Use(middleware.Recover())
     e.Use(middleware.Logger())
+    e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+        AllowOrigins: []string{"*"},
+        AllowHeaders: []string{"Content-Type", "X-Tenant", "X-User"},
+        AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+    }))
 
     // Health
     e.GET("/health", func(c echo.Context) error {
@@ -62,8 +67,20 @@ func main() {
     // Mount RPC handlers
     allowDev := mustGetenv("ALLOW_DEV_HEADERS", "true") == "true"
     tenantSvc := service.NewTenantServiceServer(db, allowDev)
-    path, handler := tenantSvc.MountHandler()
-    e.Any(path+"*", echo.WrapHandler(handler))
+    path1, h1 := tenantSvc.MountHandler()
+    e.Any(path1+"*", echo.WrapHandler(h1))
+
+    timelineSvc := service.NewTimelineServiceServer(db, allowDev)
+    path2, h2 := timelineSvc.MountHandler()
+    e.Any(path2+"*", echo.WrapHandler(h2))
+
+    reactionSvc := service.NewReactionServiceServer(db, allowDev)
+    path3, h3 := reactionSvc.MountHandler()
+    e.Any(path3+"*", echo.WrapHandler(h3))
+
+    dmSvc := service.NewDMServiceServer(db, allowDev)
+    path4, h4 := dmSvc.MountHandler()
+    e.Any(path4+"*", echo.WrapHandler(h4))
 
     port := mustGetenv("API_PORT", "8080")
     log.Printf("API listening on :%s", port)
