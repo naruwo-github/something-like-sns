@@ -13,9 +13,9 @@
 - **レート制限（最小）**: 投稿 10/分、コメント 20/分、DM送信 20/分（メモリ内トークンバケット）
 - **マルチテナント隔離**: すべてのデータアクセスは `tenant_id` でスコープ強制
 
-### 推奨スタック
-- **サーバ**: Go 1.22+, connect-go（RPC）, echo（ヘルス/静的）, Bun ORM, MySQL 8.0, golang-migrate
-- **フロント**: Next.js 14+（App Router）, React 18, TanStack Query, Tailwind CSS
+### 使用スタック
+- **サーバ**: Go 1.22+, connect-go（RPC）, echo（ヘルス/静的）, `database/sql` (MySQL), golang-migrate
+- **フロント**: Next.js 14+（App Router）, React 18, React Hooks (`useState`/`useEffect`)
 - **モノレポ**: Turborepo + pnpm
 - **開発環境**: Docker Compose（MySQL, Adminer）, Makefile
 - **観測（任意）**: OpenTelemetry（ローカルexporter）
@@ -121,11 +121,14 @@ NEXT_PUBLIC_API_BASE=http://localhost:8080
 - API結合: サーバを立てたうえで `ListFeed/CreatePost/ToggleReaction` 等
 - E2E: Playwright でサブドメイン差し替えテスト（acme ↔ beta）
 
+### 今後の展望
+- **ORMの導入**: `Bun ORM` などの導入による、Repository層のクエリビルドの安全性・生産性の向上。
+- **フロントエンドの状態管理**: `TanStack Query` などの導入による、キャッシュ、無限スクロール、楽観的更新などの実現。
+- **認証**: `middleware.ts` を利用したテナント解決や、本格的な認証（例: OIDC）の導入。
+
 ### フロント実装メモ
-- `middleware.ts` で Host から `tenantSlug` 抽出し、初回 `ResolveTenant` 実行
-- データ取得は TanStack Query（`staleTime: 30s`）、無限スクロールは `useInfiniteQuery`
-- いいねは楽観的更新（失敗時リバート）
+- 各ページコンポーネントで `useState` と `useEffect` を用いてAPIからデータを取得・表示するシンプルな実装になっています。
+- テナントやユーザーは現在各コンポーネント内でハードコードされています。
+- APIクライアントは、Connect-WebのRPCエンドポイントを直接 `fetch` で呼び出す形で実装されています。
 
 詳細・DDL・proto定義は `設計書.md` を参照してください。
-
-
