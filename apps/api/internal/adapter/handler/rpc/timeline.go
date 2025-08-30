@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	v1 "github.com/example/something-like-sns/apps/api/gen/sns/v1"
 	"github.com/example/something-like-sns/apps/api/gen/sns/v1/v1connect"
+	"github.com/example/something-like-sns/apps/api/internal/domain"
 	"github.com/example/something-like-sns/apps/api/internal/port"
 )
 

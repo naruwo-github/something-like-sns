@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"connectrpc.com/connect"
