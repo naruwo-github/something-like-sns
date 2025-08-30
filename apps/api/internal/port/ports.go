@@ -51,6 +51,23 @@ type AuthRepository interface {
 	FindUserMemberships(ctx context.Context, userID uint64) ([]*domain.TenantMembership, error)
 }
 
+// DMUsecase defines the input port for DM-related operations.
+type DMUsecase interface {
+	GetOrCreateDM(ctx context.Context, scope domain.Scope, otherUserID uint64) (uint64, error)
+	ListConversations(ctx context.Context, scope domain.Scope, token string) ([]*domain.Conversation, string, error)
+	ListMessages(ctx context.Context, scope domain.Scope, conversationID uint64, token string) ([]*domain.Message, string, error)
+	SendMessage(ctx context.Context, scope domain.Scope, conversationID uint64, body string) (*domain.Message, error)
+}
+
+// DMRepository defines the output port for DM data persistence.
+type DMRepository interface {
+	FindDMConversation(ctx context.Context, tenantID, userID1, userID2 uint64) (uint64, error)
+	CreateDMConversation(ctx context.Context, tenantID uint64, userIDs ...uint64) (uint64, error)
+	FindConversations(ctx context.Context, tenantID, userID uint64, limit int, cursorTime time.Time, cursorID uint64) ([]*domain.Conversation, error)
+	FindMessages(ctx context.Context, tenantID, conversationID uint64, limit int, cursorTime time.Time, cursorID uint64) ([]*domain.Message, error)
+	CreateMessage(ctx context.Context, tenantID, conversationID, senderID uint64, body string) (*domain.Message, error)
+}
+
 
 // CursorEncoder defines an interface for encoding and decoding cursors.
 type CursorEncoder interface {

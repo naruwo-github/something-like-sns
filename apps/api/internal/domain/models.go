@@ -61,3 +61,19 @@ type Tenant struct {
 	ID   uint64
 	Slug string
 }
+
+// Conversation represents a DM conversation.
+type Conversation struct {
+	ID            uint64
+	CreatedAt     time.Time
+	MemberUserIDs []uint64
+}
+
+// Message represents a message in a conversation.
+type Message struct {
+	ID             uint64
+	ConversationID uint64
+	SenderUserID   uint64
+	Body           string
+	CreatedAt      time.Time
+}

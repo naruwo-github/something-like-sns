@@ -73,19 +73,22 @@ func main() {
 	authRepo := mysql.NewAuthRepository(db)
 	timelineRepo := mysql.NewTimelineRepository(db)
 	reactionRepo := mysql.NewReactionRepository(db)
+	dmRepo := mysql.NewDMRepository(db)
 	cursorEncoder := mysql.NewCursorEncoder()
 
 	// 2. Create use cases (application core)
 	authUsecase := application.NewAuthUsecase(authRepo)
 	timelineUsecase := application.NewTimelineUsecase(timelineRepo, cursorEncoder)
 	reactionUsecase := application.NewReactionUsecase(reactionRepo)
+	dmUsecase := application.NewDMUsecase(dmRepo, cursorEncoder)
 
 	// 3. Create handlers (driving/primary adapters)
 	tenantHandler := rpc.NewTenantHandler(authUsecase, allowDev)
 	timelineHandler := rpc.NewTimelineHandler(authUsecase, timelineUsecase, allowDev)
 	reactionHandler := rpc.NewReactionHandler(authUsecase, reactionUsecase, allowDev)
+	dmHandler := rpc.NewDMHandler(authUsecase, dmUsecase, allowDev)
 
-	// Mount refactored RPC handlers
+	// Mount RPC handlers
 	path1, h1 := tenantHandler.MountHandler()
 	e.Any(path1+"*", echo.WrapHandler(h1))
 
@@ -95,9 +98,7 @@ func main() {
 	path3, h3 := reactionHandler.MountHandler()
 	e.Any(path3+"*", echo.WrapHandler(h3))
 
-	// Mount non-refactored RPC handlers
-	dmSvc := rpc.NewDMServiceServer(db, allowDev) // Still using old structure
-	path4, h4 := dmSvc.MountHandler()
+	path4, h4 := dmHandler.MountHandler()
 	e.Any(path4+"*", echo.WrapHandler(h4))
 
 	port := mustGetenv("API_PORT", "8080")
