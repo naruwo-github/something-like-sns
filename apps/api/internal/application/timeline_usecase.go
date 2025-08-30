@@ -1,0 +1,61 @@
+package application
+
+import (
+	"context"
+	"errors"
+	"strings"
+
+	"github.com/example/something-like-sns/apps/api/internal/domain"
+	"github.com/example/something-like-sns/apps/api/internal/port"
+)
+
+type timelineUsecase struct {
+	timelineRepo port.TimelineRepository
+	cursorEncoder port.CursorEncoder
+}
+
+func NewTimelineUsecase(tr port.TimelineRepository, ce port.CursorEncoder) port.TimelineUsecase {
+	return &timelineUsecase{timelineRepo: tr, cursorEncoder: ce}
+}
+
+func (u *timelineUsecase) CreatePost(ctx context.Context, scope domain.Scope, body string) (*domain.Post, error) {
+	body = strings.TrimSpace(body)
+	if body == "" || len(body) > 2000 {
+		return nil, errors.New("invalid body")
+	}
+	return u.timelineRepo.CreatePost(ctx, scope.TenantID, scope.UserID, body)
+}
+
+func (u *timelineUsecase) ListFeed(ctx context.Context, scope domain.Scope, token string) ([]*domain.Post, string, error) {
+	const limit = 20
+	cursorTime, cursorID, err := u.cursorEncoder.Decode(token)
+	if err != nil {
+		return nil, "", err
+	}
+
+	posts, err := u.timelineRepo.FindFeed(ctx, scope.TenantID, scope.UserID, limit, cursorTime, cursorID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var nextToken string
+	if len(posts) == limit {
+		lastPost := posts[len(posts)-1]
+		nextToken = u.cursorEncoder.Encode(lastPost.CreatedAt, lastPost.ID)
+	}
+
+	return posts, nextToken, nil
+}
+
+func (u *timelineUsecase) CreateComment(ctx context.Context, scope domain.Scope, postID uint64, body string) (*domain.Comment, error) {
+	body = strings.TrimSpace(body)
+	if body == "" || len(body) > 2000 {
+		return nil, errors.New("invalid body")
+	}
+	return u.timelineRepo.CreateComment(ctx, scope.TenantID, postID, scope.UserID, body)
+}
+
+func (u *timelineUsecase) ListComments(ctx context.Context, scope domain.Scope, postID uint64) ([]*domain.Comment, error) {
+	const limit = 50
+	return u.timelineRepo.FindCommentsByPostID(ctx, scope.TenantID, postID, limit)
+}

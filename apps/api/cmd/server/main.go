@@ -11,80 +11,98 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	"github.com/example/something-like-sns/apps/api/internal/service"
+	"github.com/example/something-like-sns/apps/api/internal/adapter/handler/rpc"
+	"github.com/example/something-like-sns/apps/api/internal/adapter/repository/mysql"
+	"github.com/example/something-like-sns/apps/api/internal/application"
 )
 
 func mustGetenv(key, def string) string {
-    if v := os.Getenv(key); v != "" {
-        return v
-    }
-    if def != "" {
-        return def
-    }
-    log.Fatalf("missing env %s", key)
-    return ""
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	if def != "" {
+		return def
+	}
+	log.Fatalf("missing env %s", key)
+	return ""
 }
 
 func main() {
-    e := echo.New()
-    e.HideBanner = true
-    e.Use(middleware.Recover())
-    e.Use(middleware.Logger())
-    e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-        AllowOrigins: []string{"*"},
-        AllowHeaders: []string{"Content-Type", "X-Tenant", "X-User", "Connect-Protocol-Version"},
-        AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
-    }))
+	e := echo.New()
+	e.HideBanner = true
+	e.Use(middleware.Recover())
+	e.Use(middleware.Logger())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowHeaders: []string{"Content-Type", "X-Tenant", "X-User", "Connect-Protocol-Version"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+	}))
 
-    // Health
-    e.GET("/health", func(c echo.Context) error {
-        return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
-    })
+	// Health
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
 
-    // DB connect
-    dbHost := mustGetenv("DB_HOST", "127.0.0.1")
-    dbPort := mustGetenv("DB_PORT", "3306")
-    dbUser := mustGetenv("DB_USER", "app")
-    dbPass := mustGetenv("DB_PASS", "pass")
-    dbName := mustGetenv("DB_NAME", "sns")
-    dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&multiStatements=true&charset=utf8mb4,utf8", dbUser, dbPass, dbHost, dbPort, dbName)
-    db, err := sql.Open("mysql", dsn)
-    if err != nil {
-        log.Fatalf("db open: %v", err)
-    }
-    defer db.Close()
-    if err := db.Ping(); err != nil {
-        log.Fatalf("db ping: %v", err)
-    }
+	// DB connect
+	dbHost := mustGetenv("DB_HOST", "127.0.0.1")
+	dbPort := mustGetenv("DB_PORT", "3306")
+	dbUser := mustGetenv("DB_USER", "app")
+	dbPass := mustGetenv("DB_PASS", "pass")
+	dbName := mustGetenv("DB_NAME", "sns")
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&multiStatements=true&charset=utf8mb4,utf8", dbUser, dbPass, dbHost, dbPort, dbName)
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatalf("db open: %v", err)
+	}
+	defer db.Close()
+	if err := db.Ping(); err != nil {
+		log.Fatalf("db ping: %v", err)
+	}
 
-    e.GET("/dbping", func(c echo.Context) error {
-        if err := db.Ping(); err != nil {
-            return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "down"})
-        }
-        return c.JSON(http.StatusOK, map[string]string{"status": "up"})
-    })
+	e.GET("/dbping", func(c echo.Context) error {
+		if err := db.Ping(); err != nil {
+			return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "down"})
+		}
+		return c.JSON(http.StatusOK, map[string]string{"status": "up"})
+	})
 
-    // Mount RPC handlers
-    allowDev := mustGetenv("ALLOW_DEV_HEADERS", "true") == "true"
-    tenantSvc := service.NewTenantServiceServer(db, allowDev)
-    path1, h1 := tenantSvc.MountHandler()
-    e.Any(path1+"*", echo.WrapHandler(h1))
+	// Dependency Injection Wiring
+	allowDev := mustGetenv("ALLOW_DEV_HEADERS", "true") == "true"
 
-    timelineSvc := service.NewTimelineServiceServer(db, allowDev)
-    path2, h2 := timelineSvc.MountHandler()
-    e.Any(path2+"*", echo.WrapHandler(h2))
+	// 1. Create repositories (driven/secondary adapters)
+	authRepo := mysql.NewAuthRepository(db)
+	timelineRepo := mysql.NewTimelineRepository(db)
+	reactionRepo := mysql.NewReactionRepository(db)
+	cursorEncoder := mysql.NewCursorEncoder()
 
-    reactionSvc := service.NewReactionServiceServer(db, allowDev)
-    path3, h3 := reactionSvc.MountHandler()
-    e.Any(path3+"*", echo.WrapHandler(h3))
+	// 2. Create use cases (application core)
+	authUsecase := application.NewAuthUsecase(authRepo)
+	timelineUsecase := application.NewTimelineUsecase(timelineRepo, cursorEncoder)
+	reactionUsecase := application.NewReactionUsecase(reactionRepo)
 
-    dmSvc := service.NewDMServiceServer(db, allowDev)
-    path4, h4 := dmSvc.MountHandler()
-    e.Any(path4+"*", echo.WrapHandler(h4))
+	// 3. Create handlers (driving/primary adapters)
+	tenantHandler := rpc.NewTenantHandler(authUsecase, allowDev)
+	timelineHandler := rpc.NewTimelineHandler(authUsecase, timelineUsecase, allowDev)
+	reactionHandler := rpc.NewReactionHandler(authUsecase, reactionUsecase, allowDev)
 
-    port := mustGetenv("API_PORT", "8080")
-    log.Printf("API listening on :%s", port)
-    if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
-        log.Fatalf("server error: %v", err)
-    }
+	// Mount refactored RPC handlers
+	path1, h1 := tenantHandler.MountHandler()
+	e.Any(path1+"*", echo.WrapHandler(h1))
+
+	path2, h2 := timelineHandler.MountHandler()
+	e.Any(path2+"*", echo.WrapHandler(h2))
+
+	path3, h3 := reactionHandler.MountHandler()
+	e.Any(path3+"*", echo.WrapHandler(h3))
+
+	// Mount non-refactored RPC handlers
+	dmSvc := rpc.NewDMServiceServer(db, allowDev) // Still using old structure
+	path4, h4 := dmSvc.MountHandler()
+	e.Any(path4+"*", echo.WrapHandler(h4))
+
+	port := mustGetenv("API_PORT", "8080")
+	log.Printf("API listening on :%s", port)
+	if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("server error: %v", err)
+	}
 }
