@@ -69,18 +69,15 @@ func main() {
 	// Dependency Injection Wiring
 	allowDev := mustGetenv("ALLOW_DEV_HEADERS", "true") == "true"
 
-	// 1. Create repositories (driven/secondary adapters)
-	authRepo := mysql.NewAuthRepository(db)
-	timelineRepo := mysql.NewTimelineRepository(db)
-	reactionRepo := mysql.NewReactionRepository(db)
-	dmRepo := mysql.NewDMRepository(db)
+	// 1. Create the store (driven/secondary adapter)
+	store := mysql.NewStore(db)
 	cursorEncoder := mysql.NewCursorEncoder()
 
 	// 2. Create use cases (application core)
-	authUsecase := application.NewAuthUsecase(authRepo)
-	timelineUsecase := application.NewTimelineUsecase(timelineRepo, cursorEncoder)
-	reactionUsecase := application.NewReactionUsecase(reactionRepo)
-	dmUsecase := application.NewDMUsecase(dmRepo, cursorEncoder)
+	authUsecase := application.NewAuthUsecase(store)
+	timelineUsecase := application.NewTimelineUsecase(store, cursorEncoder)
+	reactionUsecase := application.NewReactionUsecase(store)
+	dmUsecase := application.NewDMUsecase(store, cursorEncoder)
 
 	// 3. Create interceptor (shared adapter logic)
 	authInterceptor := rpc.NewAuthInterceptor(authUsecase, allowDev)

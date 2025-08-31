@@ -52,6 +52,16 @@ type AuthRepository interface {
 	FindUserMemberships(ctx context.Context, userID uint64) ([]*domain.TenantMembership, error)
 }
 
+// Store defines the interface for accessing all repositories.
+// It also provides a method to execute operations within a database transaction.
+type Store interface {
+	AuthRepository() AuthRepository
+	TimelineRepository() TimelineRepository
+	ReactionRepository() ReactionRepository
+	DMRepository() DMRepository
+	ExecTx(ctx context.Context, fn func(Store) error) error
+}
+
 // DMUsecase defines the input port for DM-related operations.
 type DMUsecase interface {
 	GetOrCreateDM(ctx context.Context, scope domain.Scope, otherUserID uint64) (uint64, error)

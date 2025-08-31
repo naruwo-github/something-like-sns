@@ -10,12 +10,12 @@ import (
 )
 
 type dmUsecase struct {
-	dmRepo        port.DMRepository
+	store         port.Store
 	cursorEncoder port.CursorEncoder
 }
 
-func NewDMUsecase(dr port.DMRepository, ce port.CursorEncoder) port.DMUsecase {
-	return &dmUsecase{dmRepo: dr, cursorEncoder: ce}
+func NewDMUsecase(store port.Store, ce port.CursorEncoder) port.DMUsecase {
+	return &dmUsecase{store: store, cursorEncoder: ce}
 }
 
 func (u *dmUsecase) GetOrCreateDM(ctx context.Context, scope domain.Scope, otherUserID uint64) (uint64, error) {
@@ -23,15 +23,22 @@ func (u *dmUsecase) GetOrCreateDM(ctx context.Context, scope domain.Scope, other
 		return 0, errors.New("invalid other_user_id")
 	}
 
-	convID, err := u.dmRepo.FindDMConversation(ctx, scope.TenantID, scope.UserID, otherUserID)
-	if err != nil {
-		return 0, err
-	}
-	if convID != 0 {
-		return convID, nil
-	}
+	var convID uint64
+	err := u.store.ExecTx(ctx, func(s port.Store) error {
+		var err error
+		convID, err = s.DMRepository().FindDMConversation(ctx, scope.TenantID, scope.UserID, otherUserID)
+		if err != nil {
+			return err
+		}
+		if convID != 0 {
+			return nil
+		}
 
-	return u.dmRepo.CreateDMConversation(ctx, scope.TenantID, scope.UserID, otherUserID)
+		convID, err = s.DMRepository().CreateDMConversation(ctx, scope.TenantID, scope.UserID, otherUserID)
+		return err
+	})
+
+	return convID, err
 }
 
 func (u *dmUsecase) ListConversations(ctx context.Context, scope domain.Scope, token string) ([]*domain.Conversation, string, error) {
@@ -41,7 +48,7 @@ func (u *dmUsecase) ListConversations(ctx context.Context, scope domain.Scope, t
 		return nil, "", err
 	}
 
-	convos, err := u.dmRepo.FindConversations(ctx, scope.TenantID, scope.UserID, limit, cursorTime, cursorID)
+	convos, err := u.store.DMRepository().FindConversations(ctx, scope.TenantID, scope.UserID, limit, cursorTime, cursorID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -62,7 +69,7 @@ func (u *dmUsecase) ListMessages(ctx context.Context, scope domain.Scope, conver
 		return nil, "", err
 	}
 
-	messages, err := u.dmRepo.FindMessages(ctx, scope.TenantID, conversationID, limit, cursorTime, cursorID)
+	messages, err := u.store.DMRepository().FindMessages(ctx, scope.TenantID, conversationID, limit, cursorTime, cursorID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -82,5 +89,5 @@ func (u *dmUsecase) SendMessage(ctx context.Context, scope domain.Scope, convers
 		return nil, errors.New("invalid body")
 	}
 	// TODO: Check if user is a member of the conversation
-	return u.dmRepo.CreateMessage(ctx, scope.TenantID, conversationID, scope.UserID, body)
+	return u.store.DMRepository().CreateMessage(ctx, scope.TenantID, conversationID, scope.UserID, body)
 }

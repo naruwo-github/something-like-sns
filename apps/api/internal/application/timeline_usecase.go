@@ -10,12 +10,12 @@ import (
 )
 
 type timelineUsecase struct {
-	timelineRepo port.TimelineRepository
+	store         port.Store
 	cursorEncoder port.CursorEncoder
 }
 
-func NewTimelineUsecase(tr port.TimelineRepository, ce port.CursorEncoder) port.TimelineUsecase {
-	return &timelineUsecase{timelineRepo: tr, cursorEncoder: ce}
+func NewTimelineUsecase(store port.Store, ce port.CursorEncoder) port.TimelineUsecase {
+	return &timelineUsecase{store: store, cursorEncoder: ce}
 }
 
 func (u *timelineUsecase) CreatePost(ctx context.Context, scope domain.Scope, body string) (*domain.Post, error) {
@@ -23,7 +23,7 @@ func (u *timelineUsecase) CreatePost(ctx context.Context, scope domain.Scope, bo
 	if body == "" || len(body) > 2000 {
 		return nil, errors.New("invalid body")
 	}
-	return u.timelineRepo.CreatePost(ctx, scope.TenantID, scope.UserID, body)
+	return u.store.TimelineRepository().CreatePost(ctx, scope.TenantID, scope.UserID, body)
 }
 
 func (u *timelineUsecase) ListFeed(ctx context.Context, scope domain.Scope, token string) ([]*domain.Post, string, error) {
@@ -33,7 +33,7 @@ func (u *timelineUsecase) ListFeed(ctx context.Context, scope domain.Scope, toke
 		return nil, "", err
 	}
 
-	posts, err := u.timelineRepo.FindFeed(ctx, scope.TenantID, scope.UserID, limit, cursorTime, cursorID)
+	posts, err := u.store.TimelineRepository().FindFeed(ctx, scope.TenantID, scope.UserID, limit, cursorTime, cursorID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -52,10 +52,10 @@ func (u *timelineUsecase) CreateComment(ctx context.Context, scope domain.Scope,
 	if body == "" || len(body) > 2000 {
 		return nil, errors.New("invalid body")
 	}
-	return u.timelineRepo.CreateComment(ctx, scope.TenantID, postID, scope.UserID, body)
+	return u.store.TimelineRepository().CreateComment(ctx, scope.TenantID, postID, scope.UserID, body)
 }
 
 func (u *timelineUsecase) ListComments(ctx context.Context, scope domain.Scope, postID uint64) ([]*domain.Comment, error) {
 	const limit = 50
-	return u.timelineRepo.FindCommentsByPostID(ctx, scope.TenantID, postID, limit)
+	return u.store.TimelineRepository().FindCommentsByPostID(ctx, scope.TenantID, postID, limit)
 }

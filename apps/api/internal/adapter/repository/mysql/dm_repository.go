@@ -11,11 +11,7 @@ import (
 )
 
 type dmRepository struct {
-	db *sql.DB
-}
-
-func NewDMRepository(db *sql.DB) *dmRepository {
-	return &dmRepository{db: db}
+	q DBTX
 }
 
 func (r *dmRepository) FindDMConversation(ctx context.Context, tenantID, userID1, userID2 uint64) (uint64, error) {
@@ -24,7 +20,7 @@ func (r *dmRepository) FindDMConversation(ctx context.Context, tenantID, userID1
           JOIN conversation_members m1 ON m1.conversation_id=c.id AND m1.user_id=?
           JOIN conversation_members m2 ON m2.conversation_id=c.id AND m2.user_id=?
           WHERE c.tenant_id=? AND c.kind='dm' LIMIT 1`
-	err := r.db.QueryRowContext(ctx, q, userID1, userID2, tenantID).Scan(&convID)
+	err := r.q.QueryRowContext(ctx, q, userID1, userID2, tenantID).Scan(&convID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
@@ -32,13 +28,10 @@ func (r *dmRepository) FindDMConversation(ctx context.Context, tenantID, userID1
 }
 
 func (r *dmRepository) CreateDMConversation(ctx context.Context, tenantID uint64, userIDs ...uint64) (uint64, error) {
-	tx, err := r.db.BeginTx(ctx, nil)
+	// This method will be called within a transaction from the usecase layer.
+	// The transaction is handled by the sqlStore.
+	res, err := r.q.ExecContext(ctx, "INSERT INTO conversations (tenant_id, kind) VALUES (?, 'dm')", tenantID)
 	if err != nil {
-		return 0, err
-	}
-	res, err := tx.ExecContext(ctx, "INSERT INTO conversations (tenant_id, kind) VALUES (?, 'dm')", tenantID)
-	if err != nil {
-		_ = tx.Rollback()
 		return 0, err
 	}
 	id, _ := res.LastInsertId()
@@ -52,17 +45,16 @@ func (r *dmRepository) CreateDMConversation(ctx context.Context, tenantID uint64
 	}
 	stmt := fmt.Sprintf("INSERT INTO conversation_members (conversation_id, user_id) VALUES %s", strings.Join(valueStrings, ","))
 	
-	if _, err := tx.ExecContext(ctx, stmt, valueArgs...); err != nil {
-		_ = tx.Rollback()
+	if _, err := r.q.ExecContext(ctx, stmt, valueArgs...); err != nil {
 		return 0, err
 	}
 
-	return convID, tx.Commit()
+	return convID, nil
 }
 
 func (r *dmRepository) FindConversations(ctx context.Context, tenantID, userID uint64, limit int, cursorTime time.Time, cursorID uint64) ([]*domain.Conversation, error) {
 	// For simplicity, cursor is ignored in this implementation for conversations
-	rows, err := r.db.QueryContext(ctx, `
+	rows, err := r.q.QueryContext(ctx, `
         SELECT c.id, c.created_at
         FROM conversations c
         JOIN conversation_members m ON m.conversation_id=c.id AND m.user_id=?
@@ -81,7 +73,7 @@ func (r *dmRepository) FindConversations(ctx context.Context, tenantID, userID u
 			return nil, err
 		}
 		// Fetch members
-		mrows, err := r.db.QueryContext(ctx, "SELECT user_id FROM conversation_members WHERE conversation_id=? ORDER BY user_id", conv.ID)
+		mrows, err := r.q.QueryContext(ctx, "SELECT user_id FROM conversation_members WHERE conversation_id=? ORDER BY user_id", conv.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -105,14 +97,14 @@ func (r *dmRepository) FindMessages(ctx context.Context, tenantID, conversationI
 	var rows *sql.Rows
 	var err error
 	if cursorID == 0 {
-		rows, err = r.db.QueryContext(ctx, `
+		rows, err = r.q.QueryContext(ctx, `
             SELECT id, sender_user_id, body, created_at
             FROM messages
             WHERE tenant_id=? AND conversation_id=?
             ORDER BY created_at DESC, id DESC
             LIMIT ?`, tenantID, conversationID, limit)
 	} else {
-		rows, err = r.db.QueryContext(ctx, `
+		rows, err = r.q.QueryContext(ctx, `
             SELECT id, sender_user_id, body, created_at
             FROM messages
             WHERE tenant_id=? AND conversation_id=? AND (created_at < ? OR (created_at = ? AND id < ?))
@@ -137,13 +129,13 @@ func (r *dmRepository) FindMessages(ctx context.Context, tenantID, conversationI
 }
 
 func (r *dmRepository) CreateMessage(ctx context.Context, tenantID, conversationID, senderID uint64, body string) (*domain.Message, error) {
-	resExec, err := r.db.ExecContext(ctx, "INSERT INTO messages (tenant_id, conversation_id, sender_user_id, body) VALUES (?,?,?,?)", tenantID, conversationID, senderID, body)
+	resExec, err := r.q.ExecContext(ctx, "INSERT INTO messages (tenant_id, conversation_id, sender_user_id, body) VALUES (?,?,?,?)", tenantID, conversationID, senderID, body)
 	if err != nil {
 		return nil, err
 	}
 	id, _ := resExec.LastInsertId()
 	var created time.Time
-	_ = r.db.QueryRowContext(ctx, "SELECT created_at FROM messages WHERE id=?", id).Scan(&created)
+	_ = r.q.QueryRowContext(ctx, "SELECT created_at FROM messages WHERE id=?", id).Scan(&created)
 	return &domain.Message{
 		ID:             uint64(id),
 		ConversationID: conversationID,

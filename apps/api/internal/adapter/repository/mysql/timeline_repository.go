@@ -9,21 +9,17 @@ import (
 )
 
 type timelineRepository struct {
-	db *sql.DB
-}
-
-func NewTimelineRepository(db *sql.DB) *timelineRepository {
-	return &timelineRepository{db: db}
+	q DBTX
 }
 
 func (r *timelineRepository) CreatePost(ctx context.Context, tenantID, authorID uint64, body string) (*domain.Post, error) {
-	resExec, err := r.db.ExecContext(ctx, "INSERT INTO posts (tenant_id, author_user_id, body) VALUES (?,?,?)", tenantID, authorID, body)
+	resExec, err := r.q.ExecContext(ctx, "INSERT INTO posts (tenant_id, author_user_id, body) VALUES (?,?,?)", tenantID, authorID, body)
 	if err != nil {
 		return nil, err
 	}
 	id, _ := resExec.LastInsertId()
 	var created time.Time
-	_ = r.db.QueryRowContext(ctx, "SELECT created_at FROM posts WHERE id=?", id).Scan(&created)
+	_ = r.q.QueryRowContext(ctx, "SELECT created_at FROM posts WHERE id=?", id).Scan(&created)
 	return &domain.Post{
 		ID:           uint64(id),
 		AuthorUserID: authorID,
@@ -36,7 +32,7 @@ func (r *timelineRepository) FindFeed(ctx context.Context, tenantID, userID uint
 	var rows *sql.Rows
 	var err error
 	if cursorID == 0 {
-		rows, err = r.db.QueryContext(ctx, `
+		rows, err = r.q.QueryContext(ctx, `
             SELECT p.id, p.author_user_id, p.body, p.created_at,
                    (SELECT COUNT(*) FROM reactions r WHERE r.tenant_id=p.tenant_id AND r.target_type='post' AND r.target_id=p.id) AS like_count,
                    (SELECT COUNT(*) FROM comments c WHERE c.tenant_id=p.tenant_id AND c.post_id=p.id) AS comment_count,
@@ -46,7 +42,7 @@ func (r *timelineRepository) FindFeed(ctx context.Context, tenantID, userID uint
             ORDER BY p.created_at DESC, p.id DESC
             LIMIT ?`, userID, tenantID, limit)
 	} else {
-		rows, err = r.db.QueryContext(ctx, `
+		rows, err = r.q.QueryContext(ctx, `
             SELECT p.id, p.author_user_id, p.body, p.created_at,
                    (SELECT COUNT(*) FROM reactions r WHERE r.tenant_id=p.tenant_id AND r.target_type='post' AND r.target_id=p.id) AS like_count,
                    (SELECT COUNT(*) FROM comments c WHERE c.tenant_id=p.tenant_id AND c.post_id=p.id) AS comment_count,
@@ -73,13 +69,13 @@ func (r *timelineRepository) FindFeed(ctx context.Context, tenantID, userID uint
 }
 
 func (r *timelineRepository) CreateComment(ctx context.Context, tenantID, postID, authorID uint64, body string) (*domain.Comment, error) {
-	resExec, err := r.db.ExecContext(ctx, "INSERT INTO comments (tenant_id, post_id, author_user_id, body) VALUES (?,?,?,?)", tenantID, postID, authorID, body)
+	resExec, err := r.q.ExecContext(ctx, "INSERT INTO comments (tenant_id, post_id, author_user_id, body) VALUES (?,?,?,?)", tenantID, postID, authorID, body)
 	if err != nil {
 		return nil, err
 	}
 	id, _ := resExec.LastInsertId()
 	var created time.Time
-	_ = r.db.QueryRowContext(ctx, "SELECT created_at FROM comments WHERE id=?", id).Scan(&created)
+	_ = r.q.QueryRowContext(ctx, "SELECT created_at FROM comments WHERE id=?", id).Scan(&created)
 	return &domain.Comment{
 		ID:           uint64(id),
 		PostID:       postID,
@@ -90,7 +86,7 @@ func (r *timelineRepository) CreateComment(ctx context.Context, tenantID, postID
 }
 
 func (r *timelineRepository) FindCommentsByPostID(ctx context.Context, tenantID, postID uint64, limit int) ([]*domain.Comment, error) {
-	rows, err := r.db.QueryContext(ctx, `
+	rows, err := r.q.QueryContext(ctx, `
         SELECT id, author_user_id, body, created_at
         FROM comments
         WHERE tenant_id=? AND post_id=?

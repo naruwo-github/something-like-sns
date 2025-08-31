@@ -10,11 +10,11 @@ import (
 )
 
 type reactionUsecase struct {
-	reactionRepo port.ReactionRepository
+	store port.Store
 }
 
-func NewReactionUsecase(rr port.ReactionRepository) port.ReactionUsecase {
-	return &reactionUsecase{reactionRepo: rr}
+func NewReactionUsecase(store port.Store) port.ReactionUsecase {
+	return &reactionUsecase{store: store}
 }
 
 func (u *reactionUsecase) ToggleReaction(ctx context.Context, scope domain.Scope, targetType v1.TargetType, targetID uint64, reactionType string) (*domain.Reaction, error) {
@@ -32,12 +32,12 @@ func (u *reactionUsecase) ToggleReaction(ctx context.Context, scope domain.Scope
 		return nil, errors.New("invalid target type")
 	}
 
-	active, err := u.reactionRepo.Toggle(ctx, scope.TenantID, scope.UserID, domainTargetType, targetID, reactionType)
+	active, err := u.store.ReactionRepository().Toggle(ctx, scope.TenantID, scope.UserID, domainTargetType, targetID, reactionType)
 	if err != nil {
 		return nil, err
 	}
 
-	total, err := u.reactionRepo.Count(ctx, scope.TenantID, domainTargetType, targetID, reactionType)
+	total, err := u.store.ReactionRepository().Count(ctx, scope.TenantID, domainTargetType, targetID, reactionType)
 	if err != nil {
 		return nil, err
 	}

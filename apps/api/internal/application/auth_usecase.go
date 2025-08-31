@@ -10,28 +10,28 @@ import (
 )
 
 type authUsecase struct {
-	authRepo port.AuthRepository
+	store port.Store
 }
 
-func NewAuthUsecase(ar port.AuthRepository) port.AuthUsecase {
-	return &authUsecase{authRepo: ar}
+func NewAuthUsecase(store port.Store) port.AuthUsecase {
+	return &authUsecase{store: store}
 }
 
 func (u *authUsecase) ResolveScope(ctx context.Context, tenantSlug, userAuthSub string) (*domain.Scope, error) {
 	if tenantSlug == "" || userAuthSub == "" {
 		return nil, errors.New("missing tenant slug or user auth sub")
 	}
-	tenant, err := u.authRepo.FindTenantBySlug(ctx, tenantSlug)
+	tenant, err := u.store.AuthRepository().FindTenantBySlug(ctx, tenantSlug)
 	if err != nil {
 		return nil, err
 	}
 
-	userID, err := u.authRepo.FindOrCreateUser(ctx, userAuthSub, userAuthSub)
+	userID, err := u.store.AuthRepository().FindOrCreateUser(ctx, userAuthSub, userAuthSub)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := u.authRepo.EnsureMembership(ctx, tenant.ID, userID, "member"); err != nil {
+	if err := u.store.AuthRepository().EnsureMembership(ctx, tenant.ID, userID, "member"); err != nil {
 		return nil, err
 	}
 
@@ -43,16 +43,16 @@ func (u *authUsecase) ResolveTenant(ctx context.Context, host string) (*domain.T
 	if host == "" {
 		return nil, errors.New("host is required")
 	}
-	return u.authRepo.FindTenantByHost(ctx, host)
+	return u.store.AuthRepository().FindTenantByHost(ctx, host)
 }
 
 func (u *authUsecase) GetMe(ctx context.Context, userID uint64) (*domain.User, error) {
-	user, err := u.authRepo.FindUserByID(ctx, userID)
+	user, err := u.store.AuthRepository().FindUserByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	memberships, err := u.authRepo.FindUserMemberships(ctx, userID)
+	memberships, err := u.store.AuthRepository().FindUserMemberships(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
