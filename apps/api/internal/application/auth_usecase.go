@@ -46,20 +46,17 @@ func (u *authUsecase) ResolveTenant(ctx context.Context, host string) (*domain.T
 	return u.authRepo.FindTenantByHost(ctx, host)
 }
 
-func (u *authUsecase) GetMe(ctx context.Context, tenantSlug, userAuthSub string) (*domain.User, error) {
-	scope, err := u.ResolveScope(ctx, tenantSlug, userAuthSub)
+func (u *authUsecase) GetMe(ctx context.Context, userID uint64) (*domain.User, error) {
+	user, err := u.authRepo.FindUserByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	memberships, err := u.authRepo.FindUserMemberships(ctx, scope.UserID)
+	memberships, err := u.authRepo.FindUserMemberships(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &domain.User{
-		ID:          scope.UserID,
-		DisplayName: userAuthSub,
-		Memberships: memberships,
-	}, nil
+	user.Memberships = memberships
+	return user, nil
 }

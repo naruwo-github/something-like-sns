@@ -2,50 +2,30 @@ package rpc
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
 	"connectrpc.com/connect"
 	v1 "github.com/example/something-like-sns/apps/api/gen/sns/v1"
 	"github.com/example/something-like-sns/apps/api/gen/sns/v1/v1connect"
-	"github.com/example/something-like-sns/apps/api/internal/domain"
 	"github.com/example/something-like-sns/apps/api/internal/port"
 )
 
 type DMHandler struct {
-	authUsecase     port.AuthUsecase
-	dmUsecase       port.DMUsecase
-	allowDevHeaders bool
+	dmUsecase port.DMUsecase
 }
 
-func NewDMHandler(au port.AuthUsecase, du port.DMUsecase, allowDev bool) *DMHandler {
-	return &DMHandler{authUsecase: au, dmUsecase: du, allowDevHeaders: allowDev}
+func NewDMHandler(du port.DMUsecase) *DMHandler {
+	return &DMHandler{dmUsecase: du}
 }
 
-func (s *DMHandler) MountHandler() (string, http.Handler) {
-	path, h := v1connect.NewDMServiceHandler(s)
+func (s *DMHandler) MountHandler(authInterceptor connect.Interceptor) (string, http.Handler) {
+	path, h := v1connect.NewDMServiceHandler(s, connect.WithInterceptors(authInterceptor))
 	return path, h
 }
 
-func (s *DMHandler) getScope(ctx context.Context, h http.Header) (domain.Scope, error) {
-	if !s.allowDevHeaders {
-		return domain.Scope{}, connect.NewError(connect.CodeUnauthenticated, errors.New("dev headers disabled"))
-	}
-	tenantSlug := h.Get("X-Tenant")
-	authSub := h.Get("X-User")
-	scope, err := s.authUsecase.ResolveScope(ctx, tenantSlug, authSub)
-	if err != nil {
-		return domain.Scope{}, connect.NewError(connect.CodeUnauthenticated, err)
-	}
-	return *scope, nil
-}
-
 func (s *DMHandler) GetOrCreateDM(ctx context.Context, req *connect.Request[v1.GetOrCreateDMRequest]) (*connect.Response[v1.GetOrCreateDMResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	convID, err := s.dmUsecase.GetOrCreateDM(ctx, scope, req.Msg.GetOtherUserId())
 	if err != nil {
@@ -56,10 +36,7 @@ func (s *DMHandler) GetOrCreateDM(ctx context.Context, req *connect.Request[v1.G
 }
 
 func (s *DMHandler) ListConversations(ctx context.Context, req *connect.Request[v1.ListConversationsRequest]) (*connect.Response[v1.ListConversationsResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	convos, nextToken, err := s.dmUsecase.ListConversations(ctx, scope, req.Msg.GetCursor().GetToken())
 	if err != nil {
@@ -83,10 +60,7 @@ func (s *DMHandler) ListConversations(ctx context.Context, req *connect.Request[
 }
 
 func (s *DMHandler) ListMessages(ctx context.Context, req *connect.Request[v1.ListMessagesRequest]) (*connect.Response[v1.ListMessagesResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	messages, nextToken, err := s.dmUsecase.ListMessages(ctx, scope, req.Msg.GetConversationId(), req.Msg.GetCursor().GetToken())
 	if err != nil {
@@ -112,10 +86,7 @@ func (s *DMHandler) ListMessages(ctx context.Context, req *connect.Request[v1.Li
 }
 
 func (s *DMHandler) SendMessage(ctx context.Context, req *connect.Request[v1.SendMessageRequest]) (*connect.Response[v1.SendMessageResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	msg, err := s.dmUsecase.SendMessage(ctx, scope, req.Msg.GetConversationId(), req.Msg.GetBody())
 	if err != nil {

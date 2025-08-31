@@ -52,6 +52,15 @@ func (r *authRepository) FindOrCreateUser(ctx context.Context, authSub, displayN
 	return userID, nil
 }
 
+func (r *authRepository) FindUserByID(ctx context.Context, userID uint64) (*domain.User, error) {
+	var u domain.User
+	err := r.db.QueryRowContext(ctx, "SELECT id, display_name FROM users WHERE id=?", userID).Scan(&u.ID, &u.DisplayName)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
 func (r *authRepository) EnsureMembership(ctx context.Context, tenantID, userID uint64, role string) error {
 	_, err := r.db.ExecContext(ctx, "INSERT INTO tenant_memberships (tenant_id, user_id, role) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE role=role", tenantID, userID, role)
 	return err

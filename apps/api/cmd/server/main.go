@@ -82,23 +82,26 @@ func main() {
 	reactionUsecase := application.NewReactionUsecase(reactionRepo)
 	dmUsecase := application.NewDMUsecase(dmRepo, cursorEncoder)
 
-	// 3. Create handlers (driving/primary adapters)
-	tenantHandler := rpc.NewTenantHandler(authUsecase, allowDev)
-	timelineHandler := rpc.NewTimelineHandler(authUsecase, timelineUsecase, allowDev)
-	reactionHandler := rpc.NewReactionHandler(authUsecase, reactionUsecase, allowDev)
-	dmHandler := rpc.NewDMHandler(authUsecase, dmUsecase, allowDev)
+	// 3. Create interceptor (shared adapter logic)
+	authInterceptor := rpc.NewAuthInterceptor(authUsecase, allowDev)
 
-	// Mount RPC handlers
-	path1, h1 := tenantHandler.MountHandler()
+	// 4. Create handlers (driving/primary adapters)
+	tenantHandler := rpc.NewTenantHandler(authUsecase, allowDev)
+	timelineHandler := rpc.NewTimelineHandler(timelineUsecase)
+	reactionHandler := rpc.NewReactionHandler(reactionUsecase)
+	dmHandler := rpc.NewDMHandler(dmUsecase)
+
+	// 5. Mount RPC handlers with interceptors
+	path1, h1 := tenantHandler.MountHandler(authInterceptor)
 	e.Any(path1+"*", echo.WrapHandler(h1))
 
-	path2, h2 := timelineHandler.MountHandler()
+	path2, h2 := timelineHandler.MountHandler(authInterceptor)
 	e.Any(path2+"*", echo.WrapHandler(h2))
 
-	path3, h3 := reactionHandler.MountHandler()
+	path3, h3 := reactionHandler.MountHandler(authInterceptor)
 	e.Any(path3+"*", echo.WrapHandler(h3))
 
-	path4, h4 := dmHandler.MountHandler()
+	path4, h4 := dmHandler.MountHandler(authInterceptor)
 	e.Any(path4+"*", echo.WrapHandler(h4))
 
 	port := mustGetenv("API_PORT", "8080")

@@ -39,7 +39,7 @@ type ReactionRepository interface {
 type AuthUsecase interface {
 	ResolveScope(ctx context.Context, tenantSlug, userAuthSub string) (*domain.Scope, error)
 	ResolveTenant(ctx context.Context, host string) (*domain.Tenant, error)
-	GetMe(ctx context.Context, tenantSlug, userAuthSub string) (*domain.User, error)
+	GetMe(ctx context.Context, userID uint64) (*domain.User, error)
 }
 
 // AuthRepository defines the output port for user and tenant data persistence.
@@ -47,6 +47,7 @@ type AuthRepository interface {
 	FindTenantByHost(ctx context.Context, host string) (*domain.Tenant, error)
 	FindTenantBySlug(ctx context.Context, slug string) (*domain.Tenant, error)
 	FindOrCreateUser(ctx context.Context, authSub, displayName string) (uint64, error)
+	FindUserByID(ctx context.Context, userID uint64) (*domain.User, error)
 	EnsureMembership(ctx context.Context, tenantID, userID uint64, role string) error
 	FindUserMemberships(ctx context.Context, userID uint64) ([]*domain.TenantMembership, error)
 }

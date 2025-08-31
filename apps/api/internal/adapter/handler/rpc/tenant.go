@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -20,8 +19,10 @@ func NewTenantHandler(au port.AuthUsecase, allowDev bool) *TenantHandler {
 	return &TenantHandler{authUsecase: au, allowDevHeaders: allowDev}
 }
 
-func (s *TenantHandler) MountHandler() (string, http.Handler) {
-	path, handler := v1connect.NewTenantServiceHandler(s)
+func (s *TenantHandler) MountHandler(authInterceptor connect.Interceptor) (string, http.Handler) {
+	// Auth interceptor is not applied to the tenant service itself, as it handles public tenant resolution.
+	// However, GetMe method will rely on the scope being present from the interceptor.
+	path, handler := v1connect.NewTenantServiceHandler(s, connect.WithInterceptors(authInterceptor))
 	return path, handler
 }
 
@@ -35,13 +36,11 @@ func (s *TenantHandler) ResolveTenant(ctx context.Context, req *connect.Request[
 }
 
 func (s *TenantHandler) GetMe(ctx context.Context, req *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error) {
-	if !s.allowDevHeaders {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("dev headers disabled"))
-	}
-	tenantSlug := req.Header().Get("X-Tenant")
-	authSub := req.Header().Get("X-User")
+	// The interceptor has already run and resolved the scope.
+	scope := GetScopeFromContext(ctx)
+	displayName := req.Header().Get("X-User") // DisplayName is the auth sub for now.
 
-	user, err := s.authUsecase.GetMe(ctx, tenantSlug, authSub)
+	user, err := s.authUsecase.GetMe(ctx, scope.UserID)
 	if err != nil {
 		// TODO: Map domain errors to connect errors
 		return nil, connect.NewError(connect.CodeUnauthenticated, err)
@@ -58,7 +57,7 @@ func (s *TenantHandler) GetMe(ctx context.Context, req *connect.Request[v1.GetMe
 
 	return connect.NewResponse(&v1.GetMeResponse{
 		UserId:      user.ID,
-		DisplayName: user.DisplayName,
+		DisplayName: displayName,
 		Memberships: memberships,
 	}), nil
 }

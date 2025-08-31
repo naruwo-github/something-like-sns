@@ -2,50 +2,30 @@ package rpc
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
 	"connectrpc.com/connect"
 	v1 "github.com/example/something-like-sns/apps/api/gen/sns/v1"
 	"github.com/example/something-like-sns/apps/api/gen/sns/v1/v1connect"
-	"github.com/example/something-like-sns/apps/api/internal/domain"
 	"github.com/example/something-like-sns/apps/api/internal/port"
 )
 
 type TimelineHandler struct {
-	authUsecase     port.AuthUsecase
 	timelineUsecase port.TimelineUsecase
-	allowDevHeaders bool
 }
 
-func NewTimelineHandler(au port.AuthUsecase, tu port.TimelineUsecase, allowDev bool) *TimelineHandler {
-	return &TimelineHandler{authUsecase: au, timelineUsecase: tu, allowDevHeaders: allowDev}
+func NewTimelineHandler(tu port.TimelineUsecase) *TimelineHandler {
+	return &TimelineHandler{timelineUsecase: tu}
 }
 
-func (s *TimelineHandler) MountHandler() (string, http.Handler) {
-	path, h := v1connect.NewTimelineServiceHandler(s)
+func (s *TimelineHandler) MountHandler(authInterceptor connect.Interceptor) (string, http.Handler) {
+	path, h := v1connect.NewTimelineServiceHandler(s, connect.WithInterceptors(authInterceptor))
 	return path, h
 }
 
-func (s *TimelineHandler) getScope(ctx context.Context, h http.Header) (domain.Scope, error) {
-	if !s.allowDevHeaders {
-		return domain.Scope{}, connect.NewError(connect.CodeUnauthenticated, errors.New("dev headers disabled"))
-	}
-	tenantSlug := h.Get("X-Tenant")
-	authSub := h.Get("X-User")
-	scope, err := s.authUsecase.ResolveScope(ctx, tenantSlug, authSub)
-	if err != nil {
-		return domain.Scope{}, connect.NewError(connect.CodeUnauthenticated, err)
-	}
-	return *scope, nil
-}
-
 func (s *TimelineHandler) ListFeed(ctx context.Context, req *connect.Request[v1.ListFeedRequest]) (*connect.Response[v1.ListFeedResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	posts, nextToken, err := s.timelineUsecase.ListFeed(ctx, scope, req.Msg.GetCursor().GetToken())
 	if err != nil {
@@ -73,10 +53,7 @@ func (s *TimelineHandler) ListFeed(ctx context.Context, req *connect.Request[v1.
 }
 
 func (s *TimelineHandler) CreatePost(ctx context.Context, req *connect.Request[v1.CreatePostRequest]) (*connect.Response[v1.CreatePostResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	post, err := s.timelineUsecase.CreatePost(ctx, scope, req.Msg.GetBody())
 	if err != nil {
@@ -94,10 +71,7 @@ func (s *TimelineHandler) CreatePost(ctx context.Context, req *connect.Request[v
 }
 
 func (s *TimelineHandler) ListComments(ctx context.Context, req *connect.Request[v1.ListCommentsRequest]) (*connect.Response[v1.ListCommentsResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	comments, err := s.timelineUsecase.ListComments(ctx, scope, req.Msg.GetPostId())
 	if err != nil {
@@ -119,10 +93,7 @@ func (s *TimelineHandler) ListComments(ctx context.Context, req *connect.Request
 }
 
 func (s *TimelineHandler) CreateComment(ctx context.Context, req *connect.Request[v1.CreateCommentRequest]) (*connect.Response[v1.CreateCommentResponse], error) {
-	scope, err := s.getScope(ctx, req.Header())
-	if err != nil {
-		return nil, err
-	}
+	scope := GetScopeFromContext(ctx)
 
 	comment, err := s.timelineUsecase.CreateComment(ctx, scope, req.Msg.GetPostId(), req.Msg.GetBody())
 	if err != nil {
