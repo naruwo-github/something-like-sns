@@ -1,11 +1,12 @@
+import "server-only";
+
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
-export type HeadersInput = {
+type HeadersInput = {
   tenant: string;
   user: string;
 };
-
 export function createHeaders(
   input?: Partial<HeadersInput>,
 ): Record<string, string> {

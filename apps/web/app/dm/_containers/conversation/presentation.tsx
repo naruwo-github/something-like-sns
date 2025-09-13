@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createHeaders, rpc } from "app/_lib/api";
+import { createHeaders, rpc } from "app/_lib/server/api";
 import type { Message } from "app/dm/_lib/types";
 
 type Props = {

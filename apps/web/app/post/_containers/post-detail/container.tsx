@@ -1,5 +1,4 @@
-"use server";
-import { createHeaders, rpc } from "app/_lib/api";
+import { createHeaders, rpc } from "app/_lib/server/api";
 import type { Comment } from "app/post/_lib/types";
 import PostDetailView from "./presentation";
 

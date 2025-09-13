@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { createHeaders, rpc } from "app/_lib/api";
+import { createHeaders, rpc } from "app/_lib/server/api";
 import type { Conversation } from "app/dm/_lib/types";
 
 type Props = {

@@ -1,4 +1,3 @@
-"use server";
 import PostDetailContainer from "../_containers/post-detail/container";
 
 export default async function Page({ params }: { params: { id: string } }) {

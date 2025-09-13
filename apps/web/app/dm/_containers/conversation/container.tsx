@@ -1,6 +1,5 @@
-"use server";
-import ConversationView from "./presentation";
-import { createHeaders, rpc } from "app/_lib/api";
+import ConversationView from "app/dm/_containers/conversation/presentation";
+import { createHeaders, rpc } from "app/_lib/server/api";
 import type { Message } from "app/dm/_lib/types";
 
 type Props = { conversationId: number };
