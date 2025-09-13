@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { createHeaders, rpc } from "../../_lib/api";
-import type { Comment } from "../../_lib/types";
+import { createHeaders, rpc } from "app/_lib/api";
+import type { Comment } from "app/post/_lib/types";
 
 type Props = {
   postId: number;

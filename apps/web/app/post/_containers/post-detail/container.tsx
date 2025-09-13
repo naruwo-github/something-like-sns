@@ -1,6 +1,6 @@
 "use server";
-import { createHeaders, rpc } from "../../_lib/api";
-import type { Comment } from "../../_lib/types";
+import { createHeaders, rpc } from "app/_lib/api";
+import type { Comment } from "app/post/_lib/types";
 import PostDetailView from "./presentation";
 
 type Props = { postId: number };

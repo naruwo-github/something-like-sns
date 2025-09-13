@@ -1,7 +1,7 @@
 "use server";
 import DMListView from "./presentation";
-import { createHeaders, rpc } from "../../_lib/api";
-import type { Conversation } from "../../_lib/types";
+import { createHeaders, rpc } from "app/_lib/api";
+import type { Conversation } from "app/dm/_lib/types";
 
 export default async function DMListContainer() {
   await rpc("/sns.v1.TenantService/GetMe", {}, createHeaders());
