@@ -1,3 +1,5 @@
+export const revalidate = 0;
+
 import ConversationContainer from "../_containers/conversation/container";
 
 export default async function Page({ params }: { params: { id: string } }) {

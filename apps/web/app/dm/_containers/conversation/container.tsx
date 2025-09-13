@@ -15,6 +15,9 @@ export default async function ConversationContainer({ conversationId }: Props) {
     createHeaders(),
   );
   return (
-    <ConversationView conversationId={conversationId} initialItems={items} />
+    <ConversationView
+      conversationId={conversationId}
+      initialItems={items.sort((a, b) => a.id - b.id)}
+    />
   );
 }
