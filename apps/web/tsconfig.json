@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2021",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es2021"
-    ],
+    "lib": ["dom", "dom.iterable", "es2021"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -18,9 +14,7 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@repo/shared-ts/*": [
-        "../../packages/shared-ts/*"
-      ]
+      "@repo/shared-ts/*": ["../../packages/shared-ts/*"]
     },
     "incremental": true,
     "plugins": [
@@ -29,13 +23,6 @@
       }
     ]
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

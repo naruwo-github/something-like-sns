@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start -p 3000"
+    "start": "next start -p 3000",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@bufbuild/protobuf": "^1.10.0",
