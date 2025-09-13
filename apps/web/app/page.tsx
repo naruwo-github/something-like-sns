@@ -90,6 +90,10 @@ export default function Page() {
     );
   };
 
+  const moveToPost = (postId: number) => {
+    location.href = `/post/${postId}`;
+  };
+
   return (
     <main>
       <h1 style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>
@@ -110,7 +114,18 @@ export default function Page() {
         {posts.map((p) => (
           <li
             key={p.id}
-            style={{ border: "1px solid #ddd", padding: 12, borderRadius: 8 }}
+            style={{
+              border: "1px solid #ddd",
+              padding: 12,
+              borderRadius: 8,
+              cursor: "pointer",
+            }}
+            onClick={() => moveToPost(Number(p.id))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                moveToPost(Number(p.id));
+              }
+            }}
           >
             <div style={{ fontSize: 12, color: "#666" }}>
               by {String(p.authorUserId)} at{" "}
