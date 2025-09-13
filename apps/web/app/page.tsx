@@ -47,7 +47,7 @@ export default function Page() {
     };
     (async () => {
       await call("/sns.v1.TenantService/GetMe", {}, headers);
-      const res = await call<{}, { items: Post[] }>(
+      const res = await call<Record<string, never>, { items: Post[] }>(
         "/sns.v1.TimelineService/ListFeed",
         {},
         headers,

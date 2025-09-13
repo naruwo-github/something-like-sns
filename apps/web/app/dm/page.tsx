@@ -32,7 +32,7 @@ export default function DMList() {
   useEffect(() => {
     (async () => {
       await call("/sns.v1.TenantService/GetMe", {}, headers);
-      const r = await call<{}, { items: Conversation[] }>(
+      const r = await call<Record<string, never>, { items: Conversation[] }>(
         "/sns.v1.DMService/ListConversations",
         {},
         headers,
