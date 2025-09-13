@@ -102,7 +102,7 @@ export default function Page() {
           placeholder="いまどうしてる？"
           style={{ flex: 1, padding: 8 }}
         />
-        <button onClick={createPost} disabled={!newBody.trim()}>
+        <button type="button" onClick={createPost} disabled={!newBody.trim()}>
           投稿
         </button>
       </div>
@@ -118,7 +118,7 @@ export default function Page() {
             </div>
             <div style={{ margin: "8px 0" }}>{p.body}</div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => toggleLike(Number(p.id))}>
+              <button type="button" onClick={() => toggleLike(Number(p.id))}>
                 {p.likedByMe ? "♥" : "♡"} {p.likeCount}
               </button>
               <span>💬 {p.commentCount}</span>

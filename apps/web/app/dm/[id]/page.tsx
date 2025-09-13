@@ -42,7 +42,7 @@ export default function Conversation({ params }: { params: { id: string } }) {
       await call("/sns.v1.TenantService/GetMe", {}, headers);
       const r = await call<{ conversation_id: number }, { items: Message[] }>(
         "/sns.v1.DMService/ListMessages",
-        { conversation_id: cnvId } as any,
+        { conversation_id: cnvId },
         headers,
       );
       setItems(r.items);
@@ -103,7 +103,7 @@ export default function Conversation({ params }: { params: { id: string } }) {
           placeholder="メッセージ"
           style={{ flex: 1, padding: 8 }}
         />
-        <button onClick={send} disabled={!body.trim()}>
+        <button type="button" onClick={send} disabled={!body.trim()}>
           送信
         </button>
       </div>

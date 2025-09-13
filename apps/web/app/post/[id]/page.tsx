@@ -41,7 +41,7 @@ export default function PostDetail({ params }: { params: { id: string } }) {
       await call("/sns.v1.TenantService/GetMe", {}, headers);
       const r = await call<{ post_id: number }, { items: Comment[] }>(
         "/sns.v1.TimelineService/ListComments",
-        { post_id: postId } as any,
+        { post_id: postId },
         headers,
       );
       setComments(r.items);
@@ -71,7 +71,7 @@ export default function PostDetail({ params }: { params: { id: string } }) {
           placeholder="コメントを書く"
           style={{ flex: 1, padding: 8 }}
         />
-        <button onClick={submit} disabled={!body.trim()}>
+        <button type="button" onClick={submit} disabled={!body.trim()}>
           送信
         </button>
       </div>
