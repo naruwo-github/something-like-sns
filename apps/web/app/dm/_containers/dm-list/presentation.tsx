@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { createHeaders, rpc } from "app/_lib/server/api";
+import { getOrCreateDMAction } from "app/_lib/server/actions/dm";
 import type { Conversation } from "app/dm/_lib/types";
 
 type Props = {
@@ -13,12 +13,8 @@ export default function DMListView({ initialItems }: Props) {
   const onCreate = async () => {
     const otherId = Number(other);
     if (!otherId) return;
-    const r = await rpc<{ other_user_id: number }, { conversation_id: number }>(
-      "/sns.v1.DMService/GetOrCreateDM",
-      { other_user_id: otherId },
-      createHeaders(),
-    );
-    location.href = `/dm/${r.conversation_id}`;
+    const id = await getOrCreateDMAction(otherId);
+    location.href = `/dm/${id}`;
   };
 
   return (

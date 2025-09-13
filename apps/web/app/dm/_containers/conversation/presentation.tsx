@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createHeaders, rpc } from "app/_lib/server/api";
+import { sendMessageAction } from "app/_lib/server/actions/dm";
 import type { Message } from "app/dm/_lib/types";
 
 type Props = {
@@ -26,15 +26,8 @@ export default function ConversationView({
   }, [lastMessageId]);
 
   const onSend = async () => {
-    const r = await rpc<
-      { conversation_id: number; body: string },
-      { message: Message }
-    >(
-      "/sns.v1.DMService/SendMessage",
-      { conversation_id: conversationId, body },
-      createHeaders(),
-    );
-    setItems((prev) => [...prev, r.message]);
+    const message = await sendMessageAction(conversationId, body);
+    setItems((prev) => [...prev, message]);
     setBody("");
   };
 

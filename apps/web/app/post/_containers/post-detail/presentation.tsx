@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { createHeaders, rpc } from "app/_lib/server/api";
+import { createCommentAction } from "app/_lib/server/actions/comment";
 import type { Comment } from "app/post/_lib/types";
 
 type Props = {
@@ -13,15 +13,8 @@ export default function PostDetailView({ postId, initialComments }: Props) {
   const [body, setBody] = useState("");
 
   const onSubmit = async () => {
-    const r = await rpc<
-      { post_id: number; body: string },
-      { comment: Comment }
-    >(
-      "/sns.v1.TimelineService/CreateComment",
-      { post_id: postId, body },
-      createHeaders(),
-    );
-    setComments((prev) => [...prev, r.comment]);
+    const comment = await createCommentAction(postId, body);
+    setComments((prev) => [...prev, comment]);
     setBody("");
   };
 
