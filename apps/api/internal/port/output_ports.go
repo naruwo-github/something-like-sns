@@ -12,7 +12,7 @@ type TimelineRepository interface {
 	CreatePost(ctx context.Context, tenantID, authorID uint64, body string) (*domain.Post, error)
 	FindFeed(ctx context.Context, tenantID, userID uint64, limit int, cursorTime time.Time, cursorID uint64) ([]*domain.Post, error)
 	CreateComment(ctx context.Context, tenantID, postID, authorID uint64, body string) (*domain.Comment, error)
-	FindCommentsByPostID(ctx context.Context, tenantID, postID uint64, limit int) ([]*domain.Comment, error)
+    FindCommentsByPostID(ctx context.Context, tenantID, postID uint64, limit int, cursorTime time.Time, cursorID uint64) ([]*domain.Comment, error)
 }
 
 // ReactionRepository defines the output port for reaction data persistence.

@@ -53,14 +53,25 @@ func (r *dmRepository) CreateDMConversation(ctx context.Context, tenantID uint64
 }
 
 func (r *dmRepository) FindConversations(ctx context.Context, tenantID, userID uint64, limit int, cursorTime time.Time, cursorID uint64) ([]*domain.Conversation, error) {
-	// For simplicity, cursor is ignored in this implementation for conversations
-	rows, err := r.q.QueryContext(ctx, `
-        SELECT c.id, c.created_at
-        FROM conversations c
-        JOIN conversation_members m ON m.conversation_id=c.id AND m.user_id=?
-        WHERE c.tenant_id=?
-        ORDER BY c.created_at DESC, c.id DESC
-        LIMIT ?`, userID, tenantID, limit)
+    var rows *sql.Rows
+    var err error
+    if cursorID == 0 {
+        rows, err = r.q.QueryContext(ctx, `
+            SELECT c.id, c.created_at
+            FROM conversations c
+            JOIN conversation_members m ON m.conversation_id=c.id AND m.user_id=?
+            WHERE c.tenant_id=?
+            ORDER BY c.created_at DESC, c.id DESC
+            LIMIT ?`, userID, tenantID, limit)
+    } else {
+        rows, err = r.q.QueryContext(ctx, `
+            SELECT c.id, c.created_at
+            FROM conversations c
+            JOIN conversation_members m ON m.conversation_id=c.id AND m.user_id=?
+            WHERE c.tenant_id=? AND (c.created_at < ? OR (c.created_at = ? AND c.id < ?))
+            ORDER BY c.created_at DESC, c.id DESC
+            LIMIT ?`, userID, tenantID, cursorTime, cursorTime, cursorID, limit)
+    }
 	if err != nil {
 		return nil, err
 	}

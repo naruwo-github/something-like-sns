@@ -1,14 +1,16 @@
 package rpc
 
 import (
-	"context"
-	"net/http"
-	"time"
+    "context"
+    "errors"
+    "fmt"
+    "net/http"
+    "time"
 
-	"connectrpc.com/connect"
-	v1 "github.com/example/something-like-sns/apps/api/gen/sns/v1"
-	"github.com/example/something-like-sns/apps/api/gen/sns/v1/v1connect"
-	"github.com/example/something-like-sns/apps/api/internal/port"
+    "connectrpc.com/connect"
+    v1 "github.com/example/something-like-sns/apps/api/gen/sns/v1"
+    "github.com/example/something-like-sns/apps/api/gen/sns/v1/v1connect"
+    "github.com/example/something-like-sns/apps/api/internal/port"
 )
 
 type DMHandler struct {
@@ -87,6 +89,12 @@ func (s *DMHandler) ListMessages(ctx context.Context, req *connect.Request[v1.Li
 
 func (s *DMHandler) SendMessage(ctx context.Context, req *connect.Request[v1.SendMessageRequest]) (*connect.Response[v1.SendMessageResponse], error) {
 	scope := GetScopeFromContext(ctx)
+
+    // Rate limit: DM send 20/min per user per tenant
+    key := fmt.Sprintf("dm:%d:%d", scope.TenantID, scope.UserID)
+    if !defaultRateLimiter.Allow(key, 20, 20) {
+        return nil, connect.NewError(connect.CodeResourceExhausted, errors.New("rate limit exceeded"))
+    }
 
 	msg, err := s.dmUsecase.SendMessage(ctx, scope, req.Msg.GetConversationId(), req.Msg.GetBody())
 	if err != nil {

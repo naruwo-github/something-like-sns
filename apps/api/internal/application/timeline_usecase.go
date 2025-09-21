@@ -55,7 +55,20 @@ func (u *timelineUsecase) CreateComment(ctx context.Context, scope domain.Scope,
 	return u.store.TimelineRepository().CreateComment(ctx, scope.TenantID, postID, scope.UserID, body)
 }
 
-func (u *timelineUsecase) ListComments(ctx context.Context, scope domain.Scope, postID uint64) ([]*domain.Comment, error) {
-	const limit = 50
-	return u.store.TimelineRepository().FindCommentsByPostID(ctx, scope.TenantID, postID, limit)
+func (u *timelineUsecase) ListComments(ctx context.Context, scope domain.Scope, postID uint64, token string) ([]*domain.Comment, string, error) {
+    const limit = 50
+    cursorTime, cursorID, err := u.cursorEncoder.Decode(token)
+    if err != nil {
+        return nil, "", err
+    }
+    comments, err := u.store.TimelineRepository().FindCommentsByPostID(ctx, scope.TenantID, postID, limit, cursorTime, cursorID)
+    if err != nil {
+        return nil, "", err
+    }
+    var nextToken string
+    if len(comments) == limit {
+        last := comments[len(comments)-1]
+        nextToken = u.cursorEncoder.Encode(last.CreatedAt, last.ID)
+    }
+    return comments, nextToken, nil
 }

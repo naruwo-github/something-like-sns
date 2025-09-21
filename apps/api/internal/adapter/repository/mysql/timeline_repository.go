@@ -85,25 +85,36 @@ func (r *timelineRepository) CreateComment(ctx context.Context, tenantID, postID
 	}, nil
 }
 
-func (r *timelineRepository) FindCommentsByPostID(ctx context.Context, tenantID, postID uint64, limit int) ([]*domain.Comment, error) {
-	rows, err := r.q.QueryContext(ctx, `
-        SELECT id, author_user_id, body, created_at
-        FROM comments
-        WHERE tenant_id=? AND post_id=?
-        ORDER BY created_at ASC, id ASC
-        LIMIT ?`, tenantID, postID, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := make([]*domain.Comment, 0, limit)
-	for rows.Next() {
-		var cmt domain.Comment
-		if err := rows.Scan(&cmt.ID, &cmt.AuthorUserID, &cmt.Body, &cmt.CreatedAt); err != nil {
-			return nil, err
-		}
-		cmt.PostID = postID
-		items = append(items, &cmt)
-	}
-	return items, rows.Err()
+func (r *timelineRepository) FindCommentsByPostID(ctx context.Context, tenantID, postID uint64, limit int, cursorTime time.Time, cursorID uint64) ([]*domain.Comment, error) {
+    var rows *sql.Rows
+    var err error
+    if cursorID == 0 {
+        rows, err = r.q.QueryContext(ctx, `
+            SELECT id, author_user_id, body, created_at
+            FROM comments
+            WHERE tenant_id=? AND post_id=?
+            ORDER BY created_at ASC, id ASC
+            LIMIT ?`, tenantID, postID, limit)
+    } else {
+        rows, err = r.q.QueryContext(ctx, `
+            SELECT id, author_user_id, body, created_at
+            FROM comments
+            WHERE tenant_id=? AND post_id=? AND (created_at > ? OR (created_at = ? AND id > ?))
+            ORDER BY created_at ASC, id ASC
+            LIMIT ?`, tenantID, postID, cursorTime, cursorTime, cursorID, limit)
+    }
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    items := make([]*domain.Comment, 0, limit)
+    for rows.Next() {
+        var cmt domain.Comment
+        if err := rows.Scan(&cmt.ID, &cmt.AuthorUserID, &cmt.Body, &cmt.CreatedAt); err != nil {
+            return nil, err
+        }
+        cmt.PostID = postID
+        items = append(items, &cmt)
+    }
+    return items, rows.Err()
 }

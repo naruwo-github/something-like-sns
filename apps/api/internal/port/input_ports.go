@@ -12,7 +12,7 @@ type TimelineUsecase interface {
 	CreatePost(ctx context.Context, scope domain.Scope, body string) (*domain.Post, error)
 	ListFeed(ctx context.Context, scope domain.Scope, token string) ([]*domain.Post, string, error)
 	CreateComment(ctx context.Context, scope domain.Scope, postID uint64, body string) (*domain.Comment, error)
-	ListComments(ctx context.Context, scope domain.Scope, postID uint64) ([]*domain.Comment, error)
+    ListComments(ctx context.Context, scope domain.Scope, postID uint64, token string) ([]*domain.Comment, string, error)
 }
 
 // ReactionUsecase defines the input port for reaction-related operations.

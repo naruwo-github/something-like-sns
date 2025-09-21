@@ -1,14 +1,16 @@
 package rpc
 
 import (
-	"context"
-	"net/http"
-	"time"
+    "context"
+    "errors"
+    "fmt"
+    "net/http"
+    "time"
 
-	"connectrpc.com/connect"
-	v1 "github.com/example/something-like-sns/apps/api/gen/sns/v1"
-	"github.com/example/something-like-sns/apps/api/gen/sns/v1/v1connect"
-	"github.com/example/something-like-sns/apps/api/internal/port"
+    "connectrpc.com/connect"
+    v1 "github.com/example/something-like-sns/apps/api/gen/sns/v1"
+    "github.com/example/something-like-sns/apps/api/gen/sns/v1/v1connect"
+    "github.com/example/something-like-sns/apps/api/internal/port"
 )
 
 type TimelineHandler struct {
@@ -55,6 +57,12 @@ func (s *TimelineHandler) ListFeed(ctx context.Context, req *connect.Request[v1.
 func (s *TimelineHandler) CreatePost(ctx context.Context, req *connect.Request[v1.CreatePostRequest]) (*connect.Response[v1.CreatePostResponse], error) {
 	scope := GetScopeFromContext(ctx)
 
+    // Rate limit: posts 10/min per user per tenant
+    key := fmt.Sprintf("post:%d:%d", scope.TenantID, scope.UserID)
+    if !defaultRateLimiter.Allow(key, 10, 10) {
+        return nil, connect.NewError(connect.CodeResourceExhausted, errors.New("rate limit exceeded"))
+    }
+
 	post, err := s.timelineUsecase.CreatePost(ctx, scope, req.Msg.GetBody())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -73,7 +81,7 @@ func (s *TimelineHandler) CreatePost(ctx context.Context, req *connect.Request[v
 func (s *TimelineHandler) ListComments(ctx context.Context, req *connect.Request[v1.ListCommentsRequest]) (*connect.Response[v1.ListCommentsResponse], error) {
 	scope := GetScopeFromContext(ctx)
 
-	comments, err := s.timelineUsecase.ListComments(ctx, scope, req.Msg.GetPostId())
+    comments, nextToken, err := s.timelineUsecase.ListComments(ctx, scope, req.Msg.GetPostId(), req.Msg.GetCursor().GetToken())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -89,11 +97,21 @@ func (s *TimelineHandler) ListComments(ctx context.Context, req *connect.Request
 		}
 	}
 
-	return connect.NewResponse(&v1.ListCommentsResponse{Items: items}), nil
+    res := &v1.ListCommentsResponse{Items: items}
+    if nextToken != "" {
+        res.Next = &v1.Cursor{Token: nextToken}
+    }
+    return connect.NewResponse(res), nil
 }
 
 func (s *TimelineHandler) CreateComment(ctx context.Context, req *connect.Request[v1.CreateCommentRequest]) (*connect.Response[v1.CreateCommentResponse], error) {
 	scope := GetScopeFromContext(ctx)
+
+    // Rate limit: comments 20/min per user per tenant
+    key := fmt.Sprintf("comment:%d:%d", scope.TenantID, scope.UserID)
+    if !defaultRateLimiter.Allow(key, 20, 20) {
+        return nil, connect.NewError(connect.CodeResourceExhausted, errors.New("rate limit exceeded"))
+    }
 
 	comment, err := s.timelineUsecase.CreateComment(ctx, scope, req.Msg.GetPostId(), req.Msg.GetBody())
 	if err != nil {
