@@ -56,3 +56,19 @@ resource "aws_iam_role" "codebuild_role" {
     Name = "${var.project_name}-codebuild-role"
   }
 }
+
+resource "aws_iam_role_policy" "ecs_secrets_inline_policy" {
+  name = "ecs-secrets-inline-policy"
+  role = aws_iam_role.ecs_task_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action   = "secretsmanager:GetSecretValue",
+        Effect   = "Allow",
+        Resource = "arn:aws:secretsmanager:ap-northeast-1:291945306023:secret:sns-app/db-credentials-*"
+      }
+    ]
+  })
+}

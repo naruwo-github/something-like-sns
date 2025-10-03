@@ -37,6 +37,10 @@ resource "aws_ecs_task_definition" "api" {
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   # task_role_arn            = aws_iam_role.ecs_task_execution_role.arn # 必要に応じてタスク用の別ロールを指定
 
+  tags = {
+    "Name" = "sns-api-task"
+  }
+
   container_definitions = jsonencode([
     {
       name      = "sns-api-container"
