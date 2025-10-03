@@ -21,3 +21,8 @@ build/
 turbo/
 
 /apps/api/tmp
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
