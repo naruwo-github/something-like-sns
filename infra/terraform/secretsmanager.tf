@@ -1,3 +1,10 @@
+#  データベースのパスワードなど、機密情報を安全に管理するための設定です。
+#   * random_password (1個): Terraformがランダムなパスワード文字列を生成します。
+#   * aws_secretsmanager_secret (1個): 生成したパスワードを格納する「入れ物」をSecrets Managerに作成します。
+#   * aws_secretsmanager_secret_version (1個): その「入れ物」に実際のパスワードの値を設定します。
+
+#  【このファイルの合計: 3リソース】
+
 # データベースのマスターユーザー用のランダムなパスワードを生成
 resource "random_password" "db_master_password" {
   length  = 16

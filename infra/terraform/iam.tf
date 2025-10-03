@@ -1,3 +1,9 @@
+#  AWSの各サービスが他のサービスを操作するために必要な「ロール（役割）」という権限を定義します。
+#   * aws_iam_role (計2個): ECSタスク実行用と、将来使うCodeBuild用の2つのロールを作成します。
+#   * aws_iam_role_policy_attachment (1個): ECSタスク実行ロールに、AWSが管理する標準的な権限ポリシーをアタッチ（紐付け）します。
+
+#  【このファイルの合計: 3リソース】
+
 # ECSタスクがECRからイメージをプルしたり、CloudWatch Logsにログを書き込むためのIAMロール
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "${var.project_name}-ecs-task-execution-role"

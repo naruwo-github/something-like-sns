@@ -1,3 +1,10 @@
+#  MySQLデータベース（RDS）とその周辺設定を定義します。
+#   * aws_db_instance (1個): MySQLデータベース本体です。
+#   * aws_db_subnet_group (1個): データベースをどのプライベートサブネットに配置するかを定義するグループです。
+#   * aws_security_group (1個): データベースへのアクセスを制御するファイアウォール。VPC内からのMySQL通信のみを許可します。
+
+#  【このファイルの合計: 3リソース】
+
 # RDSインスタンス用のセキュリティグループ
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-rds-sg"
@@ -50,7 +57,7 @@ resource "aws_db_instance" "main" {
   instance_class         = "db.t3.micro" # 開発用に小規模なインスタンスタイプを選択
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
-  
+
   # Secrets Managerから取得した認証情報を使用
   username = jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
   password = jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
