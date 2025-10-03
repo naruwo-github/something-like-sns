@@ -1,0 +1,7 @@
+# Use the official golang-migrate image which contains the migrate CLI tool
+FROM migrate/migrate:v4.17.1
+
+# Copy the migration files from the dbschema package
+# The files need to be in a directory that the migrate tool can access.
+# We'll copy them to /migrations inside the container.
+COPY packages/dbschema/migrations /migrations
