@@ -5,9 +5,9 @@ AWSクラウドにデプロイするためのシステム構成案
 実際に使う抽象コンポーネント（外側→内側）
 - クライアント（Web/Next.js）
 - DNS（Route 53）
-- CDN/エッジ（Amplify Hosting に内包）
+- CDN/エッジ（Vercel に内包）
 - L7ロードバランサ（ALB）
-- Web/SSRランタイム（Amplify Hosting 上のNext.js）
+- Web/SSRランタイム（Vercel 上のNext.js）
 - アプリケーションサーバー（ECS Fargate のGo API）
 - RDBMS（RDS for MySQL）
 - CI/CD（CodePipeline / CodeBuild / ECR、マイグレーションはECS RunTask）
@@ -35,7 +35,7 @@ AWSクラウドにデプロイするためのシステム構成案
                                |                  |                  |
          (フロントエンドデプロイ) |                  | (バックエンドデプロイ) |
 +-----------------v----------+   +---------------v----------------+   +---------------v----------------+
-|    AWS Amplify Hosting     |   |  Amazon ECR (Dockerレジストリ) |   |  ECSタスク (DBマイグレーション)    |
+|        Vercel Hosting      |   |  Amazon ECR (Dockerレジストリ) |   |  ECSタスク (DBマイグレーション)    |
 |  (CloudFrontは内包)        |   +--------------------------------+   +--------------------------------+
 |  Next.js (SSR/SSG)         |
 +----------------------------+
@@ -73,9 +73,9 @@ AWSクラウドにデプロイするためのシステム構成案
 
 ### 1. フロントエンド (Next.js Web App)
 
-* **AWS Amplify Hosting**
-  * Next.jsのデプロイに最適化。CDN(CloudFront)はAmplify内で自動構成されるため、外部のCloudFrontは不要
-  * 本プロジェクトではAmplify内蔵CIは使用せず、CodePipelineからアーティファクトを用いたデプロイAPIで反映する
+* **Vercel (Next.js Hosting)**
+  * Next.jsに最適化されたホスティング。CDN/エッジはVercelに内包される
+  * Git連携で自動ビルド/デプロイ。環境変数に `NEXT_PUBLIC_API_BASE` を設定
 
 ### 2. バックエンド (Go API)
 
@@ -97,15 +97,14 @@ AWSクラウドにデプロイするためのシステム構成案
 ### 4. CI/CD (継続的インテグレーション/継続的デプロイ)
 
 * **AWS CodePipeline**
-  * `git push`からデプロイまでを一元自動化するオーケストレーションサービス。Amplifyのデプロイもここに統合
+  * `git push`からバックエンドまでを自動化（WebはVercelのGit連携で自動デプロイ）
 * **AWS CodeBuild**
   * ソースのビルド、生成、コンテナイメージ作成、Webアーティファクト作成を実行：
     1. `pnpm install`
     2. `make proto`（または`buf generate`）
     3. `turbo build`（`api`/`web`）
     4. `api`の`docker build`とECRへのプッシュ
-    5. `apps/web`のビルド成果物をzip化（Amplifyアーティファクト）
-    6. CodePipelineの次ステージでAmplifyのManual Deploy APIによりリリース
+    5. WebはVercelでビルド・自動デプロイ
 * **データベースマイグレーション**
   * デプロイパイプライン内の専用ステージで、`packages/dbschema/migrations`からのスキーマ変更を適用する。
   * 安全なアプローチとして、新しいAPIコンテナをデプロイする**前**に、CodeBuildからECS RunTaskを呼び出して一度限りのマイグレーションタスク（`golang-migrate`）を実行する。
@@ -117,7 +116,7 @@ AWSクラウドにデプロイするためのシステム構成案
 
 ### 6. Observability (可観測性)
 
-* **ロギング**: FargateコンテナやAmplifyアプリケーションのログは**Amazon CloudWatch Logs**に集約し、一元的に監視・検索できるようにする。
+* **ロギング**: Fargateコンテナのログは**Amazon CloudWatch Logs**へ。WebはVercelのログ/Insightsを利用する。
 * **メトリクス**: 各AWSリソースのパフォーマンスメトリクス（CPU使用率、リクエスト数、レイテンシ等）は**Amazon CloudWatch Metrics**で収集・可視化し、アラートを設定する。
 * **トレーシング**: APIリクエストのパフォーマンス分析やボトルネック特定のために**AWS X-Ray**の導入を検討する。
 
@@ -140,4 +139,4 @@ AWSクラウドにデプロイするためのシステム構成案
 3. **CodeBuild**が`pnpm install`、`buf generate`、`turbo build`を実行し、APIのDockerイメージを**ECR**にプッシュ、Webのアーティファクト(zip)を作成。
 4. （必要に応じて）ECS RunTaskでDBマイグレーションを実行する。
 5. **CodePipeline**が**Fargate**サービスを更新（新しいECRイメージ）する。
-6. **CodePipeline**が**Amplify**の手動デプロイAPI（CreateDeployment→zipアップロード→StartDeployment）を実行し、Webを更新する。
+6. WebはVercelのGit連携により自動デプロイされる。
