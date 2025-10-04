@@ -8,18 +8,18 @@
 
 アプリケーションを配置する前の、共有基盤となるネットワーク、データベース、コンテナレジストリをまとめて構築する。
 
-- [ ] **Terraform初期設定**:
-    - [ ] `infra/terraform` ディレクトリとAWSプロバイダを設定する
-    - [ ] state管理用のS3バケットとDynamoDBテーブルを作成する
-- [ ] **VPC構築**:
+- [x] **Terraform初期設定**:
+    - [x] `infra/terraform` ディレクトリとAWSプロバイダを設定する
+    - [x] state管理用のS3バケットとDynamoDBテーブルを作成する
+- [x] **VPC構築**:
     - [ ] VPC、パブリック/プライベートサブネット、インターネットゲートウェイ等を定義する
-- [ ] **IAMロール準備**:
+- [x] **IAMロール準備**:
     - [ ] ECSタスク実行ロール、CodeBuild用ロールの雛形を作成する
-- [ ] **ECRリポジトリ作成**:
+- [x] **ECRリポジトリ作成**:
     - [ ] API用とDBマイグレーション用のECRリポジトリを2つ作成する
-- [ ] **Secrets Manager設定**:
+- [x] **Secrets Manager設定**:
     - [ ] DBのマスターパスワードを管理するシークレットを作成する
-- [ ] **RDS for MySQL構築**:
+- [x] **RDS for MySQL構築**:
     - [ ] プライベートサブネットにRDS for MySQLを構築し、Secrets Managerの値を参照させる
 
 ---
@@ -28,18 +28,18 @@
 
 バックエンドが単体で動作するところまでを、Terraformと手動作業を組み合わせて一気に行う。
 
-- [ ] **ALBとECSクラスタ構築 (Terraform)**:
-    - [ ] ALBをパブリックサブネットに作成する
-    - [ ] ECSクラスタを作成する
-- [ ] **ECSタスク定義の作成 (Terraform)**:
-    - [ ] API用のタスク定義を作成する (ECRイメージURI、Secrets Manager参照を含む)
-    - [ ] DBマイグレーション用のタスク定義を作成する
+- [x] **ALBとECSクラスタ構築 (Terraform)**:
+    - [x] ALBをパブリックサブネットに作成する
+    - [x] ECSクラスタを作成する
+- [x] **ECSタスク定義の作成 (Terraform)**:
+    - [x] API用のタスク定義を作成する (ECRイメージURI、Secrets Manager参照を含む)
+    - [x] DBマイグレーション用のタスク定義を作成する
 - [x] **Dockerイメージのビルドとプッシュ (ローカルPC)**:
     - [x] APIのDockerイメージをビルドし、ECRにプッシュする
     - [x] DBマイグレーションのDockerイメージをビルドし、ECRにプッシュする
 - [ ] **デプロイと動作確認 (手動)**:
     - [ ] ECS Run TaskでDBマイグレーションタスクを実行する
-    - [ ] ECSサービスをTerraformで作成し、APIタスクを起動する
+    - [x] ECSサービスをTerraformで作成し、APIタスクを起動する
     - [ ] ALB経由でAPIのヘルスチェックや簡単なエンドポイントにアクセスし、DB接続を含めて正常動作を確認する
 
 ---

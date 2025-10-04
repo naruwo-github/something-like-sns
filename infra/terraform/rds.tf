@@ -57,6 +57,7 @@ resource "aws_db_instance" "main" {
   instance_class         = "db.t3.micro" # 開発用に小規模なインスタンスタイプを選択
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
+  db_name                = replace(var.project_name, "-", "")
 
   # Secrets Managerから取得した認証情報を使用
   username = jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]

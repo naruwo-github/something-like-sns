@@ -42,7 +42,7 @@ resource "aws_lb_target_group" "api" {
   target_type = "ip"
 
   health_check {
-    path                = "/healthz" # Go APIに実装するヘルスチェックエンドポイント
+    path                = "/health" # Go APIに実装するヘルスチェックエンドポイント
     protocol            = "HTTP"
     matcher             = "200"
     interval            = 30

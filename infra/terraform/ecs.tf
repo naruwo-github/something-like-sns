@@ -74,7 +74,7 @@ resource "aws_ecs_task_definition" "api" {
         },
         {
           name  = "DB_NAME",
-          value = var.project_name
+          value = replace(var.project_name, "-", "")
         }
       ],
       logConfiguration = {
@@ -109,7 +109,7 @@ resource "aws_ecs_task_definition" "db_migration" {
         {
             # ex) mysql://user:pass@tcp(host:port)/dbname
             name = "DATABASE_URL",
-            value = "mysql://${jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string).username}:${jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string).password}@tcp(${aws_db_instance.main.address}:${aws_db_instance.main.port})/${var.project_name}"
+            value = "mysql://${jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string).username}:${jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string).password}@tcp(${aws_db_instance.main.address}:${aws_db_instance.main.port})/${replace(var.project_name, "-", "" )}"
         }
       ],
       command = [
