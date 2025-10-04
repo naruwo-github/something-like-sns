@@ -42,6 +42,46 @@
     - [x] ECSサービスをTerraformで作成し、APIタスクを起動する
     - [x] ALB経由でAPIのヘルスチェックや簡単なエンドポイントにアクセスし、DB接続を含めて正常動作を確認する
 
+### フェーズ2完了時の到達点（稼働中コンポーネント）
+
+- **ネットワーク(VPC)**
+    - **VPC**: `sns-app-vpc`（10.0.0.0/16）
+    - **サブネット**: パブリック×2（ALB用）、プライベート×2（ECS/RDS用）
+    - **IGW / NAT / ルートテーブル**: 構成済み（プライベート→NAT経由で外部到達可）
+- **セキュリティグループ**
+    - **ALB**: `sns-app-alb-sg`（0.0.0.0/0 → 80許可）
+    - **ECSサービス**: `sns-app-ecs-service-sg`（ALB SG からのインバウンド許可）
+    - **RDS**: `${project_name}-rds-sg`（VPC内 3306 許可）
+- **ロードバランサ**
+    - **ALB**: `sns-app-alb`（HTTP:80）
+    - **ターゲットグループ**: `sns-app-api-tg`（ターゲットタイプ: ip, ポート: 8080, ヘルスチェック: `/health`）
+    - **DNS**: `sns-app-alb-794081207.ap-northeast-1.elb.amazonaws.com`
+    - **状態**: `/health` 200 OK 確認済み
+- **コンテナ実行基盤**
+    - **ECS クラスタ**: `sns-app-cluster`
+    - **ECS サービス**: `sns-api-service`（Fargate, desired=1, プライベートサブネット配置）
+    - **タスク定義(API)**: `sns-api`
+        - コンテナ: `sns-api-container`（ポート 8080, awslogs `/ecs/sns-api`）
+        - 環境変数: `DB_HOST`/`DB_PORT`/`DB_NAME`（Terraform 供給）
+        - シークレット: `DB_USER`/`DB_PASS`（Secrets Manager 参照）
+- **データベース**
+    - **RDS MySQL 8.0**: `sns-app-db`（db.t3.micro, プライベート）
+    - **DB名**: `snsapp`
+    - **状態**: API `/dbping` にて `{"status":"up"}` 確認
+- **マイグレーション**
+    - **ECRイメージ**: `sns-app/db-migration`
+    - **タスク定義**: `sns-db-migration`
+    - **実行結果**: RunTask 成功（exitCode=0、`1/u init_schema` 適用済み）
+    - **ログ**: `/ecs/sns-db-migration`
+- **コンテナレジストリ(ECR)**
+    - `sns-app/api`（APIイメージ）
+    - `sns-app/db-migration`（マイグレーションイメージ）
+- **IAM / シークレット**
+    - **ロール**: `sns-app-ecs-task-execution-role`（ECR pull, CloudWatch Logs, Secrets 参照権限付与）
+    - **Secrets Manager**: `sns-app/db-credentials`（`username`, `password`）
+- **可観測性**
+    - **CloudWatch Logs**: `/ecs/sns-api`, `/ecs/sns-db-migration` 稼働中
+
 ---
 
 ## フェーズ3: フロントエンドのデプロイとE2E動作確認 (Terraform & 手動)
