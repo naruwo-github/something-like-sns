@@ -120,6 +120,11 @@ resource "aws_iam_policy" "codebuild_policy" {
         Effect   = "Allow",
         Action   = "iam:PassRole",
         Resource = aws_iam_role.ecs_task_execution_role.arn
+      },
+      {
+        Effect   = "Allow",
+        Action   = "ssm:GetParameters",
+        Resource = "arn:aws:ssm:ap-northeast-1:291945306023:parameter/CodeBuild/*"
       }
     ]
   })
