@@ -15,6 +15,17 @@ phases:
     commands:
       - npm install -g pnpm
       - pnpm config set store-dir .pnpm-store
+      - echo "Install buf CLI"
+      - |
+        ARCH=$(uname -m)
+        case "$ARCH" in
+          x86_64) BINARY=buf-Linux-x86_64 ;;
+          aarch64) BINARY=buf-Linux-aarch64 ;;
+          *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+        esac
+        curl -sSL -o /usr/local/bin/buf https://github.com/bufbuild/buf/releases/download/v1.45.0/$BINARY
+        chmod +x /usr/local/bin/buf
+        buf --version
 
   pre_build:
     commands:
