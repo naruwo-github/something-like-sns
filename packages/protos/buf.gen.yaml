@@ -8,14 +8,12 @@ plugins:
     out: ../../apps/api/gen
     opt:
       - paths=source_relative
-  - plugin: buf.build/bufbuild/es
-    version: v1.10.0
+  - plugin: buf.build/bufbuild/es:v1.10.0
     out: ../../packages/shared-ts/src/gen
     opt:
       - target=ts
       - import_extension=.ts
-  - plugin: buf.build/connectrpc/es
-    version: v1.5.0
+  - plugin: buf.build/connectrpc/es:v1.5.0
     out: ../../packages/shared-ts/src/gen
     opt:
       - target=ts
