@@ -1,0 +1,59 @@
+version: 0.2
+
+env:
+  variables:
+    PNPM_HOME: "/root/.pnpm"
+  parameter-store:
+    LOGIN_SERVER: /CodeBuild/docker-login-server
+    DOCKER_USER: /CodeBuild/docker-user
+    DOCKER_PASS: /CodeBuild/docker-pass
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm install -g pnpm
+      - pnpm config set store-dir .pnpm-store
+
+  pre_build:
+    commands:
+      - echo "Install dependencies"
+      - pnpm install
+      - echo "Generate protobuf files"
+      - make proto
+      - echo "Login to Amazon ECR"
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+  build:
+    commands:
+      - echo "Build API Docker image"
+      - |
+        docker build \
+          -f apps/api/Dockerfile \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          -t $API_ECR_URI:latest \
+          -t $API_ECR_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION \
+          .
+      - echo "Build DB migration Docker image"
+      - |
+        docker build \
+          -f apps/api/Dockerfile.migrate \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          -t $MIGRATE_ECR_URI:latest \
+          -t $MIGRATE_ECR_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION \
+          .
+
+  post_build:
+    commands:
+      - echo "Push API Docker image to ECR"
+      - docker push --all-tags $API_ECR_URI
+      - echo "Push DB migration Docker image to ECR"
+      - docker push --all-tags $MIGRATE_ECR_URI
+      - echo "Create imagedefinitions.json for CodePipeline"
+      - |
+        printf '[{"name":"%s","imageUri":"%s"}]' $API_CONTAINER_NAME $API_ECR_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

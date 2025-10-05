@@ -1,0 +1,12 @@
+# Local Terraform state files
+*.tfstate
+*.tfstate.*
+
+# .tfvars files should not be committed to version control
+*.tfvars
+
+# Ignore the .terraform directory, which contains provider plugins
+.terraform/
+
+# Ignore crash log files
+crash.log

@@ -57,6 +57,80 @@ resource "aws_iam_role" "codebuild_role" {
   }
 }
 
+resource "aws_iam_policy" "codebuild_policy" {
+  name        = "${var.project_name}-codebuild-policy"
+  description = "Policy for the main CodeBuild project"
+
+  policy = jsonencode({
+    Version   = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:GetBucketVersioning",
+          "s3:PutObject",
+          "s3:PutObjectAcl"
+        ],
+        Resource = [
+          aws_s3_bucket.codepipeline_artifacts.arn,
+          "${aws_s3_bucket.codepipeline_artifacts.arn}/*"
+        ]
+      },
+      {
+        Effect   = "Allow",
+        Action   = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow",
+        Action   = "ecr:GetAuthorizationToken",
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow",
+        Action   = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:PutImage"
+        ],
+        Resource = [
+          aws_ecr_repository.api.arn,
+          aws_ecr_repository.db_migration.arn
+        ]
+      },
+      {
+        Effect   = "Allow",
+        Action   = "secretsmanager:GetSecretValue",
+        Resource = aws_secretsmanager_secret.db_credentials.arn
+      },
+      {
+        Effect   = "Allow",
+        Action   = "ecs:RunTask",
+        Resource = aws_ecs_task_definition.db_migration.arn
+      },
+      {
+        Effect   = "Allow",
+        Action   = "iam:PassRole",
+        Resource = aws_iam_role.ecs_task_execution_role.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_attach" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = aws_iam_policy.codebuild_policy.arn
+}
+
+
 resource "aws_iam_role_policy" "ecs_secrets_inline_policy" {
   name = "ecs-secrets-inline-policy"
   role = aws_iam_role.ecs_task_execution_role.id

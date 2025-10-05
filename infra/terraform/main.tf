@@ -25,3 +25,6 @@ terraform {
 provider "aws" {
   region = var.region
 }
+
+# AWSアカウントIDを取得するためのデータソース
+data "aws_caller_identity" "current" {}

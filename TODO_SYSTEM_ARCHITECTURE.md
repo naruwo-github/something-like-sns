@@ -101,14 +101,14 @@
 
 バックエンド側の自動化を行う（フロントはVercelのGit連携で自動デプロイ）。
 
-- [ ] **CodePipelineとCodeBuildの作成 (Terraform)**:
-    - [ ] CodePipelineとCodeBuildのプロジェクトを定義する
-    - [ ] `buildspec.yml` にビルドからデプロイアーティファクト作成までの一連のコマンドを記述する
-- [ ] **デプロイフローの自動化 (Terraform)**:
-    - [ ] パイプラインにSource(Git), Build(CodeBuild)ステージを定義する
-    - [ ] Deployステージを定義する:
+- [x] **CodePipelineとCodeBuildの作成 (Terraform)**:
+    - [x] CodePipelineとCodeBuildのプロジェクトを定義する
+    - [x] `buildspec.yml` にビルドからデプロイアーティファクト作成までの一連のコマンドを記述する
+- [x] **デプロイフローの自動化 (Terraform)**:
+    - [x] パイプラインにSource(Git), Build(CodeBuild)ステージを定義する
+    - [x] Deployステージを定義する:
         1.  DBマイグレーション (ECS Run Task)
         2.  バックエンドデプロイ (ECSサービス更新)
         3.  フロントエンドはVercelにより自動デプロイ（本パイプライン対象外）
-- [ ] **自動化の最終テスト**:
-    - [ ] Gitリポジトリへのプッシュをトリガーに、パイプライン全体が正常に動作し、アプリケーションが更新されることを確認する
+- [x] **自動化の最終テスト**:
+    - [x] Gitリポジトリへのプッシュをトリガーに、パイプライン全体が正常に動作し、アプリケーションが更新されることを確認する
