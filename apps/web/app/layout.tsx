@@ -1,3 +1,6 @@
+import AuthenticationButton from "./_components/AuthenticationButton";
+import { Providers } from "./providers";
+
 export const metadata = { title: "SNS", description: "Multi-tenant SNS" };
 
 export default function RootLayout({
@@ -8,13 +11,25 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: 16 }}>
-          <nav style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-            <a href="/">Home</a>
-            <a href="/dm">DM</a>
-          </nav>
-          {children}
-        </div>
+        <Providers>
+          <div style={{ maxWidth: 720, margin: "0 auto", padding: 16 }}>
+            <nav
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: "flex", gap: 12 }}>
+                <a href="/">Home</a>
+                <a href="/dm">DM</a>
+              </div>
+              <AuthenticationButton />
+            </nav>
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );
