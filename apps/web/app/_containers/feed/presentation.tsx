@@ -74,7 +74,11 @@ export default function FeedView({ initialPosts }: Props) {
               }
             }}
           >
-            <div style={{ fontSize: 12, color: "#666" }}>
+            <div
+              style={{ fontSize: 12, color: "#666" }}
+              // Suppress hydration warning for timestamp mismatch between server and client.
+              suppressHydrationWarning
+            >
               by {String(p.authorUserId)} at{" "}
               {new Date(p.createdAt).toLocaleString()}
             </div>
