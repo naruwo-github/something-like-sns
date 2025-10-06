@@ -6,6 +6,7 @@ AWSクラウドにデプロイするためのシステム構成案
 
 実際に使う抽象コンポーネント（外側→内側）
 - クライアント（Web/Next.js）
+- IDaaS（Auth0: OIDC）
 - DNS（Route 53）
 - CDN/エッジ（Vercel に内包）
 - L7ロードバランサ（ALB）
@@ -78,6 +79,9 @@ AWSクラウドにデプロイするためのシステム構成案
 * **Vercel (Next.js Hosting)**
   * Next.jsに最適化されたホスティング。CDN/エッジはVercelに内包される
   * Git連携で自動ビルド/デプロイ。環境変数に `NEXT_PUBLIC_API_BASE` を設定
+  * 認証は **Auth0** を利用。Vercel のプロジェクト環境変数に以下を設定：
+    - `AUTH0_SECRET`, `AUTH0_ISSUER_BASE_URL`, `AUTH0_BASE_URL`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`
+    - API を保護する場合は `AUTH0_AUDIENCE`, `AUTH0_SCOPE`
 
 ### 2. バックエンド (Go API)
 
@@ -87,6 +91,14 @@ AWSクラウドにデプロイするためのシステム構成案
 * **Amazon ECR (Elastic Container Registry)**
   * ビルドされたGo APIのDockerイメージを保存するためのプライベートコンテナレジストリ。CodeBuildがイメージをプッシュし、Fargateがサービスをデプロイするためにここからイメージをプル。
 * **Application Load Balancer (ALB)**
+#### 認証/認可フロー（将来の本番想定）
+
+1. ブラウザ→Auth0（Universal Login）でSSO
+2. WebはAuth0セッションから `id_token`/`access_token` を取得
+3. API呼び出し時、`Authorization: Bearer <access_token>` を付与
+4. Go API は Auth0 の JWK をキャッシュし、JWT を検証 → `sub` を `users.auth_sub` にマップ
+5. `tenant_id` はドメイン解決 or 明示ヘッダにより解決し、`ctx` に注入
+
   * 受信したAPIリクエストを受け付け、実行中の複数のFargateコンテナにトラフィックを分散する
   * SSL終端（HTTPS）やヘルスチェックも担当する
 

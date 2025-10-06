@@ -7,7 +7,7 @@
 
 ### 機能概要
 - マルチテナント（サブドメイン or `X-Tenant`ヘッダ）
-- 開発用の認証スタブ (`X-User`ヘッダ)
+- 認証: Auth0 (OIDC) + 開発用スタブ互換（APIは `X-User` を暫定許可）
 - タイムライン、コメント、リアクション（いいね）、DM機能
 
 ### 使用スタック
@@ -54,9 +54,20 @@ DB_NAME=sns
 API_PORT=8080
 ALLOW_DEV_HEADERS=true
 NEXT_PUBLIC_API_BASE=http://localhost:8080
+
+# Auth0 (Web: Next.js)
+# 参考: https://github.com/auth0/nextjs-auth0
+AUTH0_SECRET=replace-with-random-32-bytes-hex
+AUTH0_ISSUER_BASE_URL=https://your-tenant.auth0.com
+AUTH0_BASE_URL=http://localhost:3000
+AUTH0_CLIENT_ID=your-client-id
+AUTH0_CLIENT_SECRET=your-client-secret
+# APIを保護する場合に取得するトークン用（必要に応じて）
+# AUTH0_AUDIENCE=your-api-audience
+# AUTH0_SCOPE=openid profile email offline_access
 ```
 
 ### 今後の展望
 - **ORMの導入**: `Bun ORM`などの導入によるRepository層の生産性向上。
 - **フロントエンドの状態管理**: `TanStack Query`などの導入によるキャッシュ、無限スクロール、楽観的更新の実現。
-- **認証**: `middleware.ts`を利用したテナント解決や、本格的な認証の導入。
+- **認証**: Web は Auth0 を導入済み。今後は API も JWT/アクセストークン検証を導入し、`X-User` 開発スタブから移行。

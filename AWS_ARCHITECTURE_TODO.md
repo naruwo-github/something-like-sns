@@ -97,6 +97,19 @@
     - [x] `vercel deploy --prod` で本番デプロイ
     - [x] 発行URLで表示・投稿・リロード・詳細/コメントまで確認する
 
+### 追補: 認証（Auth0）設定 TODO
+
+- [x] Auth0 テナント作成 / Application (Regular Web App) 作成
+- [] Allowed Callback/Logout/Origin URLs を Vercel/ローカル向けに設定
+  - Callback: `http://localhost:3000/api/auth/callback`, `https://<vercel-domain>/api/auth/callback`
+  - Logout: `http://localhost:3000/`, `https://<vercel-domain>/`
+  - Origins: `http://localhost:3000`, `https://<vercel-domain>`
+- [ ] Vercel 環境変数に以下を登録
+  - `AUTH0_SECRET`, `AUTH0_ISSUER_BASE_URL`, `AUTH0_BASE_URL`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`
+  - 必要に応じて `AUTH0_AUDIENCE`, `AUTH0_SCOPE`
+- [ ] ローカル `.env.local` も同様に設定（秘密はコミット禁止）
+- [ ] 本番移行時: API 側で JWT 検証（JWK キャッシュ）を実装し、`X-User` スタブを段階廃止
+
 ---
 
 ## フェーズ4: CI/CDパイプラインの構築と完全自動化 (バックエンドのみTerraform)

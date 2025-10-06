@@ -9,7 +9,7 @@
 ## 0. スコープ / 非スコープ
 
 * **目的**: 共有DB（行分離）方式のマルチテナントSNSを最小実装し、API/DB/FE が一体で動く雛形を提供。
-* **含む**: テナント解決、認証スタブ、CRUD/API、DM（2者DM）、無限スクロール、簡易レート制限、シードデータ、E2Eテスト。
+* **含む**: テナント解決、認証（WebはAuth0, APIは当面スタブ併用）、CRUD/API、DM（2者DM）、無限スクロール、簡易レート制限、シードデータ、E2Eテスト。
 * **含まない**: 画像アップロード、課金/請求、通知配信、監査証跡の厳密化、本番運用のセキュリティ強化（WAF/脆弱性診断等）。
 
 ---
@@ -328,10 +328,33 @@ service DMService {
 
 ---
 
-## 9. 認証スタブ
+## 9. 認証（Auth0 + 開発スタブ）
 
-* 開発では `X-User` ヘッダを許容し、`users.auth_sub` に紐づくユーザーに偽装ログイン。
-* 初回は存在しなければ作成し、`tenant_memberships` に `member` で自動参加（シードに依存）。
+### 9.1 Web（Next.js）: Auth0
+
+* SDK: `@auth0/nextjs-auth0` v4
+* 設置箇所: `apps/web/lib/auth0.ts`（`Auth0Client` 初期化）、`apps/web/middleware.ts`（全ルートのミドルウェア適用）、サーバーコンポーネントから `auth0.getSession()` を使用
+* ルーティング: `/auth/login`, `/auth/logout` をナビゲーションに設置
+* ユーザー情報: `session.user`（`sub`, `name`, `email`, `picture` など）をUIやバックエンド呼び出し時に利用
+* アクセストークン: API を保護する場合は `authorizationParameters.audience/scope` を設定し `getAccessToken()` を利用
+
+必要環境変数（ローカル例）:
+
+```
+AUTH0_SECRET=replace-with-random-32-bytes-hex
+AUTH0_ISSUER_BASE_URL=https://your-tenant.auth0.com
+AUTH0_BASE_URL=http://localhost:3000
+AUTH0_CLIENT_ID=your-client-id
+AUTH0_CLIENT_SECRET=your-client-secret
+# AUTH0_AUDIENCE=your-api-audience
+# AUTH0_SCOPE=openid profile email offline_access
+```
+
+### 9.2 API（Go）: 当面の開発スタブ
+
+* 開発では `X-User` ヘッダを許容し、`users.auth_sub` に紐づくユーザーに偽装ログイン
+* 初回は存在しなければ作成し、`tenant_memberships` に `member` で自動参加（シードに依存）
+* 将来は **`Authorization: Bearer <JWT>`** を受け、Auth0 の JWK で検証し、`sub` を `users.auth_sub` にマッピングする
 
 ---
 
