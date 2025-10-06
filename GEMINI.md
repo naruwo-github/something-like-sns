@@ -4,11 +4,13 @@ This is a boilerplate project for a multi-tenant SNS application, built with a G
 
 ## Documentation Structure
 
-This project has two main documentation files with distinct purposes:
+This project has three main documentation files with distinct purposes:
 
 1.  **`README.md`**: Provides a quick start guide for developers. It contains the essential steps to get the project running locally, an overview of the tech stack, and the basic repository structure. **Start here if you want to run the project.**
 
-2.  **`DESIGN_DOC.md`**: This is the comprehensive design document. It contains all the detailed information about the project's architecture, data models (DDL), API specifications (.proto definitions), multi-tenancy strategy, and development conventions. **Refer to this for any in-depth questions about how the system is designed or why certain decisions were made.**
+2.  **`SOFTWARE_DESIGN.md`**: This is the comprehensive design document. It contains all the detailed information about the project's architecture, data models (DDL), API specifications (.proto definitions), multi-tenancy strategy, and development conventions. **Refer to this for any in-depth questions about how the system is designed or why certain decisions were made.**
+
+3.  **`AWS_ARCHITECTURE.md`**: This document outlines the system architecture for deploying the application to AWS, including infrastructure, CI/CD, and operational design.
 
 ## Key Technologies
 
@@ -25,7 +27,8 @@ All common tasks are defined as targets in the `Makefile`. For a step-by-step gu
 ## Key Files and Directories
 
 *   `README.md`: Quick start guide.
-*   `DESIGN_DOC.md`: Detailed design and architecture.
+*   `SOFTWARE_DESIGN.md`: Detailed design and architecture.
+*   `AWS_ARCHITECTURE.md`: System architecture design for deploying to AWS.
 *   `Makefile`: Defines common tasks like `proto`, `migrate`, `seed`, `api-dev`, `web-dev`.
 *   `apps/api/`: The Go backend application.
 *   `apps/web/`: The Next.js frontend application.

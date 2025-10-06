@@ -40,10 +40,12 @@ repo/
 │  └─ shared-ts/           # Webで共有する型/ユーティリティ
 ├─ infra/
 │  └─ local/               # docker-compose.yml / seed スクリプト
-├─ turbo.json
-├─ package.json (pnpm)
+├─ README.md               # Quick start guide
+├─ SOFTWARE_DESIGN.md      # Detailed software design
+├─ AWS_ARCHITECTURE.md     # AWS infrastructure design
 ├─ Makefile
-└─ README.md
+├─ turbo.json
+└─ package.json (pnpm)
 ```
 
 ---
